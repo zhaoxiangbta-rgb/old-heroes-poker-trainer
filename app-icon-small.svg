@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="background-small" cx="34%" cy="22%" r="92%"><stop offset="0" stop-color="#244737"/><stop offset="0.52" stop-color="#101d17"/><stop offset="1" stop-color="#050907"/></radialGradient>
+    <linearGradient id="gold-small" x1="0" y1="0" x2="0.86" y2="1"><stop offset="0" stop-color="#fff0ae"/><stop offset="0.3" stop-color="#f2ca67"/><stop offset="0.6" stop-color="#bd7d20"/><stop offset="1" stop-color="#f1c65e"/></linearGradient>
+    <filter id="shadow-small" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#000" flood-opacity="0.8"/></filter>
+  </defs>
+  <rect x="22" y="22" width="980" height="980" rx="218" fill="url(#background-small)"/>
+  <rect x="38" y="38" width="948" height="948" rx="202" fill="none" stroke="url(#gold-small)" stroke-width="20"/>
+  <g font-family="Arial Unicode MS, serif" font-size="132" font-weight="700" text-anchor="middle" filter="url(#shadow-small)"><text x="335" y="300" fill="url(#gold-small)">♠</text><text x="455" y="300" fill="#d54245">♥</text><text x="575" y="300" fill="#d54245">♦</text><text x="695" y="300" fill="url(#gold-small)">♣</text></g>
+  <g id="hero-wordmark" transform="translate(64 0)">
+    <text x="475" y="675" fill="url(#gold-small)" filter="url(#shadow-small)" font-family="STKaiti, 'Kaiti SC', 'Songti SC', serif" font-size="250" font-style="italic" font-weight="900" letter-spacing="-26" text-anchor="middle" transform="skewX(-4)">老英雄</text>
+    <path d="M195 742 C406 705 624 695 824 657 C641 726 437 762 224 778 Z" fill="url(#gold-small)"/>
+  </g>
+</svg>

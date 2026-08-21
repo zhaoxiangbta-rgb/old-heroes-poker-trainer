@@ -1,0 +1,49 @@
+.resizable-workspace {
+  position: relative;
+}
+
+.workspace-resizer {
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  right: calc(var(--teaching-panel-width) - 4px);
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.workspace-resizer::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  content: "";
+  transition: background 160ms, box-shadow 160ms;
+}
+
+.workspace-resizer:hover::after,
+.workspace-resizer:focus-visible::after,
+.resizable-workspace.is-resizing .workspace-resizer::after {
+  background: #d3a655;
+  box-shadow: 0 0 10px #d3a65588;
+}
+
+.resizable-workspace.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .workspace aside,
+  .workspace-resizer {
+    display: none;
+  }
+}

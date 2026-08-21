@@ -1,0 +1,35 @@
+name: 问题反馈
+description: 报告规则、结算、性能或界面问题
+title: "[问题] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题描述
+      description: 请说明实际结果和预期结果。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 如与牌局有关，请提供随机种子、手数、行动线或不含密钥的导出 JSON。
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 运行平台
+      options:
+        - macOS Apple 芯片
+        - Windows 10/11 x64
+        - 浏览器开发预览
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 补充信息
+      description: 可附截图或录屏；请确认内容不含 API Key。

@@ -1,0 +1,139 @@
+.card,
+.hole .card,
+.seat.hero .card,
+.empty-card {
+  width: 48px;
+  height: 66px;
+}
+
+.card,
+.hole .card,
+.seat.hero .card {
+  margin: 0 2px;
+  padding: 5px;
+  font-size: 22px;
+  line-height: 1;
+  transform: none;
+}
+
+.card small,
+.hole .card small,
+.seat.hero .card small {
+  margin-top: 3px;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.card.suit-red { color: #d83232; }
+.card.suit-black { color: #151a18; }
+.card .suit-symbol.suit-red { color: #d83232; }
+.card .suit-symbol.suit-black { color: #151a18; }
+.hole { height: 70px; }
+
+/* Large cards need a protected footer inside the table region. */
+.table {
+  padding-bottom: 92px;
+}
+
+.felt {
+  height: 460px;
+}
+
+.seat3,
+.seat4 {
+  bottom: -3%;
+}
+
+.action-area {
+  position: relative;
+  z-index: 5;
+  min-height: 158px;
+  border-top: 1px solid #202a26;
+  background: #0a0f0d;
+}
+
+.actions {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 10px 14px 4px;
+}
+
+.amount-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+}
+
+.amount-actions label {
+  min-width: 82px;
+  justify-content: flex-end;
+  color: #aab5ae;
+  font-size: 13px;
+}
+
+.amount-actions input {
+  width: 94px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.size-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  gap: 6px;
+}
+
+.size-presets button,
+.amount-actions .confirm-amount,
+.basic-actions button {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 9px 14px !important;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.size-presets button {
+  min-width: 64px;
+  font-size: 16px;
+}
+
+.size-presets .all-in-action {
+  min-width: 82px;
+  font-size: 14px;
+}
+
+.amount-actions .confirm-amount {
+  min-width: 104px;
+  font-size: 15px;
+}
+
+.basic-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 8px;
+  width: min(100%, 360px);
+}
+
+.basic-actions button {
+  width: 100%;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+@media (max-width: 1050px) {
+  .amount-actions label { width: 100%; justify-content: center; }
+  .size-presets { order: 3; width: min(100%, 360px); }
+  .amount-actions .confirm-amount { min-width: 118px; }
+  .table { padding-bottom: 98px; }
+  .felt { height: 430px; }
+  .seat3, .seat4 { bottom: -2%; }
+}

@@ -1,0 +1,22 @@
+.session-ledger {
+  display: grid;
+  gap: 7px;
+}
+
+.ledger-row {
+  display: grid;
+  grid-template-columns: minmax(62px, 1fr) repeat(4, auto);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid #2d3b34;
+  border-radius: 7px;
+  background: #111915;
+  color: #8f9c95;
+  font-size: 11px;
+}
+
+.ledger-row b { color: #e2e8e4; }
+.ledger-row strong { color: #aeb8b2; }
+.ledger-row .profit-win { color: #e05c55; }
+.ledger-row .profit-loss { color: #58b985; }

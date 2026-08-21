@@ -1,0 +1,75 @@
+.deal-deck,
+.flying-card {
+  position: absolute;
+  left: calc(50% - 16px);
+  top: calc(44% - 22px);
+  z-index: 18;
+  width: 32px;
+  height: 44px;
+  border: 1px solid #d7aa52;
+  border-radius: 5px;
+  color: #d7aa52;
+  background: repeating-linear-gradient(45deg, #12281f 0 5px, #b48634 6px 7px, #12281f 8px 11px);
+  box-shadow: 0 5px 12px #000a;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.deal-deck {
+  opacity: 0;
+  transform: translate(5px, -3px) rotate(3deg);
+}
+
+.felt[data-phase="dealing-hole"] .deal-deck {
+  opacity: 1;
+}
+
+.flying-card {
+  --deal-x: 0px;
+  --deal-y: 0px;
+  --deal-rotate: 0deg;
+  animation: casino-deal 240ms cubic-bezier(.2, .72, .28, 1) both;
+}
+
+.flying-card.target-seat-0 { --deal-x: -275px; --deal-y: -145px; --deal-rotate: -9deg; }
+.flying-card.target-seat-1 { --deal-x: 245px; --deal-y: -145px; --deal-rotate: 9deg; }
+.flying-card.target-seat-2 { --deal-x: 350px; --deal-y: 20px; --deal-rotate: 15deg; }
+.flying-card.target-seat-3 { --deal-x: 175px; --deal-y: 205px; --deal-rotate: 8deg; }
+.flying-card.target-seat-4 { --deal-x: -205px; --deal-y: 205px; --deal-rotate: -8deg; }
+.flying-card.target-seat-5 { --deal-x: -370px; --deal-y: 20px; --deal-rotate: -15deg; }
+
+.seat.receiving {
+  border-color: #e5bd69;
+  box-shadow: 0 0 0 2px #9f742f, 0 0 22px #d29a384f;
+}
+
+.board .card {
+  animation: board-card-land 180ms cubic-bezier(.2, .72, .28, 1) both;
+}
+
+@keyframes casino-deal {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(.82); }
+  12% { opacity: 1; }
+  72% { transform: translate(calc(var(--deal-x) * .88), calc(var(--deal-y) * .88 - 12px)) rotate(calc(var(--deal-rotate) * .72)) scale(1.02); }
+  100% { opacity: 1; transform: translate(var(--deal-x), var(--deal-y)) rotate(var(--deal-rotate)) scale(1); }
+}
+
+@keyframes board-card-land {
+  from { opacity: 0; transform: translate(-28px, -18px) rotate(-5deg) scale(.88); }
+  to { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flying-card,
+  .board .card {
+    animation-name: deal-fade;
+    animation-duration: 40ms;
+  }
+
+  @keyframes deal-fade {
+    from { opacity: 0; transform: none; }
+    to { opacity: 1; transform: none; }
+  }
+}

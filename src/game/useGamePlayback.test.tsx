@@ -1,0 +1,133 @@
+// @vitest-environment jsdom
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { newGame } from "./game";
+import { formatReceipt, useGamePlayback } from "./useGamePlayback";
+
+describe("useGamePlayback", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("animates the initial hand before unlocking the hero", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() =>
+      useGamePlayback(initial, { animateInitialDeal: true }),
+    );
+
+    expect(result.current.phase).toBe("dealing-hole");
+    expect(result.current.busy).toBe(true);
+    for (let index = 0; index < initial.players.length * 2; index += 1)
+      act(() => vi.advanceTimersByTime(240));
+    expect(result.current.phase).toBe("hero-turn");
+    expect(result.current.busy).toBe(false);
+  });
+
+  it("keeps controls locked until a replacement hand finishes dealing", () => {
+    const { result } = renderHook(() => useGamePlayback(newGame(42)));
+
+    act(() => result.current.replaceGame(newGame(99), { animateDeal: true }));
+    expect(result.current.phase).toBe("dealing-hole");
+    expect(result.current.busy).toBe(true);
+    for (let index = 0; index < 12; index += 1)
+      act(() => vi.advanceTimersByTime(240));
+    expect(result.current.phase).toBe("hero-turn");
+    expect(result.current.busy).toBe(false);
+  });
+
+  it("locks synchronously so a rapid second click cannot submit again", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    let first = false;
+    let second = true;
+    act(() => {
+      first = result.current.submit({ type: "call" });
+      second = result.current.submit({ type: "call" });
+    });
+    expect([first, second]).toEqual([true, false]);
+    expect(result.current.busy).toBe(true);
+    expect(result.current.receipt).toBe(`✓ 跟注 ${initial.legal.callAmount}`);
+    expect(result.current.receipt).not.toContain("已提交");
+    expect(result.current.game.log).toHaveLength(initial.log.length);
+    expect(result.current.game.assessments).toHaveLength(0);
+  });
+
+  it("paints the receipt before running assessment and playback planning", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }));
+    expect(result.current.receipt).toBe(`✓ 跟注 ${initial.legal.callAmount}`);
+    expect(result.current.phase).toBe("submitting");
+    expect(result.current.game.assessments).toHaveLength(0);
+    act(() => vi.advanceTimersByTime(0));
+    expect(result.current.game.assessments).toHaveLength(1);
+  });
+
+  it("preserves one identical assessment through every playback frame", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }));
+    act(() => vi.advanceTimersByTime(0));
+    const assessment = result.current.game.assessments[0];
+    expect(assessment).toBeDefined();
+    act(() => vi.runAllTimers());
+    expect(result.current.game.assessments).toEqual([assessment]);
+  });
+
+  it("keeps the previous chip effect alive as the next opponent starts thinking", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }));
+    act(() => vi.advanceTimersByTime(0));
+    act(() => vi.advanceTimersByTime(80));
+    const actionFrame = result.current.frame!;
+    expect(actionFrame.effect).toBe("chips");
+    act(() =>
+      vi.advanceTimersByTime(actionFrame.durationMs - actionFrame.overlapMs),
+    );
+    expect(result.current.phase).toBe("bot-thinking");
+    expect(
+      result.current.visualTokens.some((token) => token.effect === "chips"),
+    ).toBe(true);
+  });
+
+  it("formats concise receipts for every hero action", () => {
+    const game = newGame(42);
+    expect(formatReceipt(game, { type: "call" })).toBe(
+      `✓ 跟注 ${game.legal.callAmount}`,
+    );
+    expect(formatReceipt(game, { type: "fold" })).toBe("✓ 弃牌");
+    expect(formatReceipt(game, { type: "raise", to: 12 })).toBe(
+      "✓ 加注到 12",
+    );
+  });
+
+  it("reveals one opponent action per elapsed playback frame", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }));
+    act(() => vi.advanceTimersByTime(0));
+    act(() => vi.advanceTimersByTime(80));
+    const afterHero = result.current.game.log.length;
+    expect(afterHero).toBe(initial.log.length + 1);
+    expect(result.current.phase).toBe("animating-chips");
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.phase).toBe("bot-thinking");
+    expect(result.current.game.log).toHaveLength(afterHero);
+    act(() => vi.advanceTimersByTime(750));
+    expect(result.current.phase).toBe("animating-chips");
+    expect(result.current.game.log).toHaveLength(afterHero + 1);
+  });
+
+  it("cancels an old queue when a different hand replaces it", () => {
+    const initial = newGame(42);
+    const replacement = newGame(99);
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }));
+    act(() => result.current.replaceGame(replacement));
+    act(() => vi.runAllTimers());
+    expect(result.current.game.seed).toBe(99);
+    expect(result.current.game.log).toEqual(replacement.log);
+    expect(result.current.busy).toBe(false);
+    expect(result.current.phase).toBe("hero-turn");
+  });
+});

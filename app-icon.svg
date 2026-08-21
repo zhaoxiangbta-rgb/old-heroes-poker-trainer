@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="background" cx="34%" cy="22%" r="92%">
+      <stop offset="0" stop-color="#244737"/>
+      <stop offset="0.52" stop-color="#101d17"/>
+      <stop offset="1" stop-color="#050907"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.86" y2="1">
+      <stop offset="0" stop-color="#fff0ae"/>
+      <stop offset="0.25" stop-color="#f2ca67"/>
+      <stop offset="0.55" stop-color="#bd7d20"/>
+      <stop offset="0.78" stop-color="#f1c65e"/>
+      <stop offset="1" stop-color="#805012"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0cd79"/>
+      <stop offset="0.45" stop-color="#9d651b"/>
+      <stop offset="1" stop-color="#e0ad45"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="15" stdDeviation="11" flood-color="#000000" flood-opacity="0.78"/>
+      <feDropShadow dx="0" dy="3" stdDeviation="1" flood-color="#59330a" flood-opacity="1"/>
+    </filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <clipPath id="icon-mask">
+      <rect x="22" y="22" width="980" height="980" rx="218"/>
+    </clipPath>
+  </defs>
+  <rect x="22" y="22" width="980" height="980" rx="218" fill="url(#background)"/>
+  <ellipse cx="392" cy="264" rx="332" ry="244" fill="#74b996" opacity="0.08" filter="url(#soft)" clip-path="url(#icon-mask)"/>
+  <rect x="38" y="38" width="948" height="948" rx="202" fill="none" stroke="url(#rim)" stroke-width="15"/>
+  <rect x="67" y="67" width="890" height="890" rx="180" fill="none" stroke="#f1cf7b" stroke-opacity="0.18" stroke-width="4"/>
+
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="110" font-weight="700" text-anchor="middle" filter="url(#shadow)">
+    <text x="340" y="280" fill="url(#gold)">♠</text>
+    <text x="455" y="280" fill="#c43a3d">♥</text>
+    <text x="570" y="280" fill="#c43a3d">♦</text>
+    <text x="685" y="280" fill="url(#gold)">♣</text>
+  </g>
+  <path d="M281 314 C410 338 610 338 744 309" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+
+  <g id="hero-wordmark" transform="translate(64 0)">
+    <text x="475" y="594" fill="url(#gold)" filter="url(#shadow)" font-family="STKaiti, 'Kaiti SC', 'Songti SC', serif" font-size="244" font-style="italic" font-weight="900" letter-spacing="-25" text-anchor="middle" transform="skewX(-4)">老英雄</text>
+    <path d="M205 660 C404 629 618 620 807 587 C640 649 444 683 238 700 Z" fill="url(#gold)" opacity="0.96"/>
+  </g>
+
+  <text x="512" y="795" fill="#f4d88e" font-family="Georgia, 'Times New Roman', serif" font-size="60" font-weight="700" letter-spacing="18" text-anchor="middle">OLD HEROES</text>
+  <circle cx="512" cy="857" r="5" fill="#d8a94a"/>
+  <path d="M374 857 H474 M550 857 H650" stroke="#9c6a25" stroke-width="4" stroke-linecap="round"/>
+</svg>

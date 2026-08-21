@@ -1,0 +1,62 @@
+.showdown-review {
+  display: grid;
+  gap: 12px;
+}
+
+.showdown-entry,
+.pot-result {
+  background: #141d19;
+  border: 1px solid #2f3b35;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.showdown-entry-head,
+.pot-result-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.showdown-entry-head span,
+.showdown-folded,
+.pot-result p {
+  color: #a9b3ad;
+}
+
+.showdown-row {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.showdown-label {
+  color: #8d9992;
+  font-size: 12px;
+}
+
+.showdown-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.showdown-row code {
+  color: #d8dfdb;
+  font-size: 12px;
+}
+
+.showdown-folded {
+  margin-top: 12px;
+}
+
+.showdown-pots {
+  display: grid;
+  gap: 10px;
+}
+
+.pot-result-head strong {
+  color: #d8ad60;
+  font-size: 20px;
+}

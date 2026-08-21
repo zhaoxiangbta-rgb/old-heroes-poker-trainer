@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.cargo-local/
+.rustup-local/
+src-tauri/target/
+*.log
+.superpowers/
+.DS_Store
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+release/
