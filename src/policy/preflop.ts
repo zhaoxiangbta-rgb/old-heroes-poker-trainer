@@ -88,7 +88,23 @@ export function preflopFrequencies(context: DecisionContext): PreflopFrequency[]
   const raises = raiseCount(context);
   let items: PreflopFrequency[];
 
-  if (raises >= 2) {
+  if (raises >= 3) {
+    if (score >= 88)
+      items = [
+        { action: { type: "raise", to: context.maxRaiseTo }, frequency: 0.55, reason: "顶端范围 5-bet 全下" },
+        { action: { type: "call" }, frequency: 0.45, reason: "顶端范围控制深筹码波动" },
+      ];
+    else if (score >= 82)
+      items = [
+        { action: { type: "call" }, frequency: 0.62, reason: "强牌关闭再加注循环" },
+        { action: { type: "fold" }, frequency: 0.38, reason: "面对 5-bet 收紧范围" },
+      ];
+    else
+      items = [
+        { action: { type: "fold" }, frequency: 0.9, reason: "深层加注只保留顶端范围" },
+        { action: { type: "call" }, frequency: 0.1, reason: "低频率防守" },
+      ];
+  } else if (raises >= 2) {
     if (score >= 85)
       items = [
         { action: { type: "raise", to: context.minRaiseTo }, frequency: 0.78, reason: "顶端范围 4-bet" },

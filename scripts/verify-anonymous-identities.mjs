@@ -1,9 +1,18 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
+const repositoryRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+  cwd: projectRoot,
+  encoding: "utf8",
+}).trim();
+const projectPrefix = relative(repositoryRoot, projectRoot);
 const workspaceDocs = resolve(projectRoot, "../docs");
+const docsPrefix = existsSync(workspaceDocs)
+  ? relative(repositoryRoot, workspaceDocs)
+  : undefined;
 const blocked = [
   "QmVsbGE=",
   "5ZOI6Zif",
@@ -49,8 +58,21 @@ function scan(path, labelRoot) {
   }
 }
 
-scan(projectRoot, projectRoot);
-if (existsSync(workspaceDocs)) scan(workspaceDocs, resolve(projectRoot, ".."));
+const tracked = execFileSync("git", ["ls-files", "-z"], {
+  cwd: repositoryRoot,
+  encoding: "utf8",
+}).split("\0").filter(Boolean);
+for (const label of tracked) {
+  const inProject = !projectPrefix || label === projectPrefix || label.startsWith(`${projectPrefix}/`);
+  const inDocs = docsPrefix && (label === docsPrefix || label.startsWith(`${docsPrefix}/`));
+  if (!inProject && !inDocs) continue;
+  const path = resolve(repositoryRoot, label);
+  if (existsSync(path) && statSync(path).isFile()) scan(path, repositoryRoot);
+}
+for (const directory of ["release/macos", "release/windows-portable"]) {
+  const path = resolve(projectRoot, directory);
+  if (existsSync(path)) scan(path, projectRoot);
+}
 
 if (failures.length) {
   console.error(failures.map((failure) => `FAIL ${failure}`).join("\n"));

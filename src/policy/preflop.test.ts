@@ -60,6 +60,13 @@ describe("six-max preflop strategy", () => {
     expect(result.some((item) => item.action.type === "raise" && item.frequency > 0.5)).toBe(true);
   });
 
+  it("does not keep min-raising ordinary opening hands through a five-bet war", () => {
+    const result = preflopFrequencies(
+      context({ hole: ["9h", "9c"], position: "CO", raises: 3 }),
+    );
+    expect(result.some((item) => item.action.type === "raise")).toBe(false);
+  });
+
   it("covers a short-stack node where calling all-in is the only legal action", () => {
     const result = preflopFrequencies(
       context({

@@ -10,3 +10,6 @@ src-tauri/target/
 vite.config.js
 vite.config.d.ts
 release/
+config/player-names.local.json
+src/config/playerNames.generated.ts
+release/local-private/

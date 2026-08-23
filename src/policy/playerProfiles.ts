@@ -1,4 +1,8 @@
 import type { TableProfileId } from "./tableProfiles";
+import {
+  applyBuildPlayerNames,
+  PUBLIC_PLAYER_NAMES,
+} from "../config/buildPlayerNames";
 
 export type PlayerArchetype =
   | "loose-aggressive"
@@ -44,15 +48,22 @@ export const PLAYER_ARCHETYPES: Record<
   recreational: { name: "娱乐型", looseness: 82, aggression: 68, bluff: 60 },
 };
 
-export const DEFAULT_PLAYER_PROFILES: ReadonlyArray<Readonly<PlayerProfile>> =
+export const PUBLIC_DEFAULT_PLAYER_PROFILES: ReadonlyArray<Readonly<PlayerProfile>> =
   Object.freeze([
-    Object.freeze({ version: 1, playerId: "friend-01", displayName: "阿岚", archetype: "loose-aggressive", looseness: 86, aggression: 88, bluff: 66 }),
-    Object.freeze({ version: 1, playerId: "friend-02", displayName: "北辰", archetype: "balanced", looseness: 50, aggression: 58, bluff: 35 }),
-    Object.freeze({ version: 1, playerId: "friend-03", displayName: "墨川", archetype: "balanced", looseness: 42, aggression: 52, bluff: 28 }),
-    Object.freeze({ version: 1, playerId: "friend-04", displayName: "青禾", archetype: "balanced", looseness: 55, aggression: 64, bluff: 42 }),
-    Object.freeze({ version: 1, playerId: "friend-05", displayName: "老周", archetype: "tight-passive", looseness: 36, aggression: 32, bluff: 15 }),
-    Object.freeze({ version: 1, playerId: "friend-06", displayName: "小满", archetype: "tight-passive", looseness: 32, aggression: 28, bluff: 12 }),
+    Object.freeze({ version: 1, playerId: "friend-01", displayName: PUBLIC_PLAYER_NAMES["friend-01"], archetype: "loose-aggressive", looseness: 86, aggression: 88, bluff: 66 }),
+    Object.freeze({ version: 1, playerId: "friend-02", displayName: PUBLIC_PLAYER_NAMES["friend-02"], archetype: "balanced", looseness: 50, aggression: 58, bluff: 35 }),
+    Object.freeze({ version: 1, playerId: "friend-03", displayName: PUBLIC_PLAYER_NAMES["friend-03"], archetype: "balanced", looseness: 42, aggression: 52, bluff: 28 }),
+    Object.freeze({ version: 1, playerId: "friend-04", displayName: PUBLIC_PLAYER_NAMES["friend-04"], archetype: "balanced", looseness: 55, aggression: 64, bluff: 42 }),
+    Object.freeze({ version: 1, playerId: "friend-05", displayName: PUBLIC_PLAYER_NAMES["friend-05"], archetype: "tight-passive", looseness: 36, aggression: 32, bluff: 15 }),
+    Object.freeze({ version: 1, playerId: "friend-06", displayName: PUBLIC_PLAYER_NAMES["friend-06"], archetype: "tight-passive", looseness: 32, aggression: 28, bluff: 12 }),
   ] satisfies PlayerProfile[]);
+
+export const DEFAULT_PLAYER_PROFILES: ReadonlyArray<Readonly<PlayerProfile>> =
+  Object.freeze(
+    applyBuildPlayerNames(PUBLIC_DEFAULT_PLAYER_PROFILES).map((profile) =>
+      Object.freeze(profile),
+    ),
+  );
 
 const ARCHETYPES = new Set<PlayerArchetype>(
   Object.keys(PLAYER_ARCHETYPES) as PlayerArchetype[],

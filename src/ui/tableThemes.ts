@@ -1,6 +1,7 @@
 import type { GameplaySettings } from "../data/types";
 import type { TableProfileId } from "../policy/tableProfiles";
 import { normalizePlayerProfiles } from "../policy/playerProfiles";
+import { applyBuildPlayerNames } from "../config/buildPlayerNames";
 
 export const TABLE_THEME_IDS = [
   "classic-green",
@@ -52,6 +53,8 @@ export function normalizeGameplaySettings(
       MAX_TEACHING_PANEL_WIDTH,
       Math.max(MIN_TEACHING_PANEL_WIDTH, candidateWidth),
     ),
-    playerProfiles: normalizePlayerProfiles(input.playerProfiles),
+    playerProfiles: normalizePlayerProfiles(
+      applyBuildPlayerNames(Array.isArray(input.playerProfiles) ? input.playerProfiles : []),
+    ),
   };
 }

@@ -25,15 +25,21 @@ npm run tauri build
 
 可直接使用的安装包请到 GitHub Releases 下载：
 
-- `Old-Heroes-Poker-Trainer-v1.0.0-macOS-Apple-Silicon.dmg`
-- `Old-Heroes-Poker-Trainer-v1.0.0-Windows-x64-Portable.zip`
+- `Old-Heroes-Poker-Trainer-v1.0.1-macOS-Apple-Silicon.dmg`
+- `Old-Heroes-Poker-Trainer-v1.0.1-Windows-x64-Portable.zip`
 
 SHA-256：
 
-- macOS：`612968f5fafa047616d663c66ad7019f03cdbd8aba066fbffa5f3bd1ec0c2545`
-- Windows：`e4f11d340e3e1558dff5d181928ed4a9477254f51d6c1e2c133ca6dd4af7736a`
+- macOS：`899946170cd2dec4d6a3f5acb288d7e3dff6d1263e245f8c01fe6a8e3e1b7b11`
+- Windows：`a9660aee2e098c5a312b209709a2c5458165e0b892908446536d58bcc62d0b0c`
 
 Windows 免安装版解压后双击 `老英雄牌局.exe`；Windows 10/11 通常已自带 WebView2 Runtime。两端均不需要 Codex、Node、Python 或网络。
+
+### 1.0.1 策略修正
+
+- 翻前第 5 次及更深层再加注收紧到真正顶端范围，普通强牌不再机械反复最小加注直到全下。
+- 翻后被过牌到时计入受人数和听牌质量约束的主动权价值，避免单挑底池出现 0% 探测下注。
+- 公开构建始终使用虚构默认名称；开发者可通过被 Git 忽略的本地构建配置替换显示名称，不改变稳定身份、画像或重放。
 
 ## 操作
 

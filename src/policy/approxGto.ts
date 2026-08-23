@@ -134,6 +134,13 @@ function postflopBase(context: DecisionContext): PostflopBase {
   const equityResult = weightedEquity(context, range);
   const equity = equityResult.equity;
   const actions = candidateActions(context);
+  const currentStreetLine = context.visibleLine.filter(
+    (entry) => entry.street === context.street,
+  );
+  const checkedTo =
+    context.currentBet === 0 &&
+    currentStreetLine.length > 0 &&
+    currentStreetLine.every((entry) => entry.kind === "check");
   const candidates: PolicyCandidate[] = actions.map((action) => {
     let ev = 0;
     let foldEquity = 0;
@@ -164,6 +171,14 @@ function postflopBase(context: DecisionContext): PostflopBase {
         foldEquity * context.pot +
         (1 - foldEquity) * (equity * finalPot - investment) -
         context.playersBehind * investment * 0.04;
+      // Checking to a player transfers some initiative. Without accounting for
+      // it, showdown equity makes checking dominate every unmade hand and the
+      // table unrealistically checks down. Keep the bonus modest multiway.
+      if (checkedTo) {
+        const initiative = context.activePlayers === 2 ? 0.12 : 0.04;
+        const drawBonus = Math.min(0.05, features.cleanOutEstimate * 0.006);
+        ev += context.pot * (initiative + drawBonus);
+      }
       label = `${context.currentBet ? "加注" : "下注"}到 ${action.to}`;
     } else {
       label = "弃牌";

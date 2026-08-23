@@ -59,6 +59,32 @@ describe("local approximate GTO policy", () => {
     expect(rate(context, "raise")).toBeGreaterThan(rate(context, "check"));
   });
 
+  it("keeps a meaningful stab frequency after the action checks to a player", () => {
+    let bets = 0;
+    for (let seed = 1; seed <= 400; seed++) {
+      const decision = approxGtoPolicy.decide(spot({
+        seed,
+        decisionIndex: 4,
+        street: "flop",
+        hole: [seed % 2 ? "Qh" : "9h", seed % 3 ? "Jd" : "8d"],
+        board: ["Ah", "7c", "2s"],
+        pot: 18,
+        currentBet: 0,
+        streetBet: 0,
+        activePlayers: 2,
+        playersBehind: 0,
+        minRaiseTo: 6,
+        maxRaiseTo: 194,
+        legal: { fold: false, check: true, call: 0, raise: true },
+        visibleLine: [
+          { street: "flop", actorSeat: 0, kind: "check", toAmount: 0, potAfter: 18 },
+        ],
+      }));
+      if (decision.action.type === "raise") bets++;
+    }
+    expect(bets / 400).toBeGreaterThanOrEqual(0.2);
+  });
+
   it("bluffs less often multiway than heads-up", () => {
     const bluff = spot({
       street: "turn",
