@@ -48,7 +48,8 @@ mod tests {
         let header_end = response.windows(4).position(|part| part == b"\r\n\r\n").expect("headers") + 4;
         let headers = String::from_utf8_lossy(&response[..header_end]);
         assert!(headers.contains("Content-Encoding: gzip"));
-        assert!(response.len() - header_end < 150_000, "compressed page must stay small enough for a stable phone transfer");
+        let compressed_size = response.len() - header_end;
+        assert!(compressed_size < 150_000, "compressed page must stay small enough for a stable phone transfer: {compressed_size} bytes");
         service.stop().expect("stop");
     }
 }

@@ -11,7 +11,9 @@ import { newActionGame, nextActionHand } from "./game/actionDealing";
 import { useGamePlayback } from "./game/useGamePlayback";
 import { isNoActionPlayback } from "./game/playback";
 import { PokerTable } from "./components/PokerTable";
+import { MobilePokerTable } from "./mobile/MobilePokerTable";
 import { ActionControls } from "./components/ActionControls";
+import { MobileActionSheet } from "./mobile/MobileActionSheet";
 import { HistoryPage } from "./components/HistoryPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { SpecialTrainingPage } from "./components/SpecialTrainingPage";
@@ -217,9 +219,17 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
                       : "动作播放中"}
               </span>
             </div>
-            <PokerTable game={game} phase={phase} frame={frame} visualTokens={visualTokens} recentActions={recentActions} themeId={gameplaySettings.tableThemeId} />
+            {mobile ? (
+              <MobilePokerTable game={game} phase={phase} frame={frame} visualTokens={visualTokens} recentActions={recentActions} themeId={gameplaySettings.tableThemeId} />
+            ) : (
+              <PokerTable game={game} phase={phase} frame={frame} visualTokens={visualTokens} recentActions={recentActions} themeId={gameplaySettings.tableThemeId} />
+            )}
             {game.phase === "playing" && !noActionPlayback ? (
-              <ActionControls game={game} busy={busy} receipt={receipt} onAction={submit} />
+              mobile ? (
+                phase === "hero-turn" ? <MobileActionSheet game={game} busy={busy} receipt={receipt} onAction={submit} /> : null
+              ) : (
+                <ActionControls game={game} busy={busy} receipt={receipt} onAction={submit} />
+              )
             ) : handComplete ? (
               <div className="next">
                 <strong>{game.result?.summary}</strong>

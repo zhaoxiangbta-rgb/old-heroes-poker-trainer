@@ -23,7 +23,9 @@ describe("mobile app shell", () => {
     expect(screen.getByRole("navigation", { name: "移动导航" })).toBeVisible();
     expect(screen.getByText(APP_VERSION_LABEL)).toBeVisible();
     await waitFor(() => expect(screen.getAllByText(/轮到你行动|群友行动中|发底牌中/).length).toBeGreaterThan(0));
-    expect(screen.getByText("ALL IN")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "行动选择" })).toBeVisible();
+    expect(screen.getByRole("slider", { name: "本街投入到" })).toBeVisible();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
     expect(screen.getByText("已可离线使用")).toBeVisible();
   });
 

@@ -124,7 +124,7 @@ fn handle_request(request: Request) {
     }
     match asset(path) {
         Some((body, content_type)) if accepts_gzip && body.len() > 4096 => {
-            let mut encoder = GzEncoder::new(Vec::new(), Compression::fast());
+            let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
             if encoder.write_all(body).is_ok() {
                 if let Ok(compressed) = encoder.finish() {
                     respond(request, StatusCode(200), content_type, compressed, true);

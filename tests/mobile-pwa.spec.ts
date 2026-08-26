@@ -11,6 +11,14 @@ test("mobile app restarts from its cache while offline", async ({ page, context 
 
   await expect(page.getByRole("navigation", { name: "移动导航" })).toBeVisible();
   await expect(page.getByText("当前离线运行")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator(".mobile-poker-table")).toBeVisible();
+  await expect(page.getByRole("region", { name: "行动选择" })).toBeVisible();
+  const slider = page.getByRole("slider", { name: "本街投入到" });
+  await expect(slider).toBeVisible();
+  await slider.fill(await slider.getAttribute("max") ?? "0");
+  await expect(page.getByTestId("mobile-selected-amount")).toHaveText("ALL IN");
+  await page.getByRole("button", { name: "加注", exact: true }).click();
+  await expect(page.getByRole("region", { name: "行动选择" })).toBeHidden();
 });
 
 test("manifest and service worker are scoped to the published subdirectory", async ({ request }) => {

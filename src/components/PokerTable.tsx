@@ -6,17 +6,9 @@ import {
 } from "../game/playback";
 import type { VisualToken } from "../game/useGamePlayback";
 import type { TableThemeId } from "../ui/tableThemes";
+import { PlayingCard } from "./PlayingCard";
 
-const suit = (card: string) => ("hd".includes(card[1]) ? "suit-red" : "suit-black");
-
-function Card({ card, back = false }: { card?: string; back?: boolean }) {
-  if (back || !card) return <span className="card back">♠</span>;
-  const symbols: Record<string, string> = { h: "♥", d: "♦", s: "♠", c: "♣" };
-  const suitClass = suit(card);
-  return <span className={`card face-up ${suitClass}`} data-card-kind="face-up">{card[0]}<small className={`suit-symbol ${suitClass}`}>{symbols[card[1]]}</small></span>;
-}
-
-type Props = {
+export type PokerTableProps = {
   game: GameState;
   phase: PlaybackPhase;
   frame?: PlaybackFrame;
@@ -25,7 +17,7 @@ type Props = {
   themeId: TableThemeId;
 };
 
-export function PokerTable({ game, phase, frame, visualTokens, recentActions, themeId }: Props) {
+export function PokerTable({ game, phase, frame, visualTokens, recentActions, themeId }: PokerTableProps) {
   const prompt = currentPrompt(game);
   const visibleActor = frame?.actorSeat ?? game.toAct;
   const actor = visibleActor >= 0 ? game.players[visibleActor] : undefined;
@@ -70,7 +62,7 @@ export function PokerTable({ game, phase, frame, visualTokens, recentActions, th
         <div className="action-banner"><strong>{status}</strong>{game.phase === "playing" && !noActionPlayback && <span>最高下注 {prompt.currentBet} · 需跟注 {prompt.toCall}</span>}</div>
         <div className="deal-deck" aria-hidden="true">♠</div>
         {holeDeal ? <div className={`flying-card target-seat-${holeDeal.seat}`} key={frame?.id} aria-hidden="true">♠</div> : null}
-        <div className="board">{visibleBoard.map((card) => <Card card={card} key={card} />)}{Array.from({ length: 5 - visibleBoard.length }, (_, index) => <span className="empty-card" key={index} />)}</div>
+        <div className="board">{visibleBoard.map((card) => <PlayingCard card={card} key={card} />)}{Array.from({ length: 5 - visibleBoard.length }, (_, index) => <span className="empty-card" key={index} />)}</div>
         {game.players.map((player, seat) => {
           const label = positionLabel(player.position);
           const last = [...game.log].reverse().find((entry) => entry.actorSeat === seat && (entry.street === game.street || player.folded));
@@ -85,7 +77,7 @@ export function PokerTable({ game, phase, frame, visualTokens, recentActions, th
             <span className="position-name">{label.name} <small>{label.abbreviation}</small></span>
             <small className="stack">{player.allIn ? "全下" : `${player.stack} 筹码`}</small>
             {player.folded && phase !== "dealing-hole" && <span className="fold-badge">已弃牌</span>}
-            <div className="hole">{player.hole.slice(0, visibleHoleCount(seat)).map((card, index) => <Card card={player.revealed ? card : undefined} back={!player.revealed} key={index} />)}</div>
+            <div className="hole">{player.hole.slice(0, visibleHoleCount(seat)).map((card, index) => <PlayingCard card={player.revealed ? card : undefined} back={!player.revealed} key={index} />)}</div>
             <div className={`wager-zone${player.streetBet ? " committed" : ""}`}>
               <span className="chip-stack" aria-hidden="true"><i /><i /><i /></span>
               <b>{player.streetBet}</b><small>本街</small>
