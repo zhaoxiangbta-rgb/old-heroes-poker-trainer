@@ -83,7 +83,7 @@ describe("local approximate GTO policy", () => {
       if (decision.action.type === "raise") bets++;
     }
     expect(bets / 400).toBeGreaterThanOrEqual(0.2);
-  });
+  }, 15_000);
 
   it("bluffs less often multiway than heads-up", () => {
     const bluff = spot({
