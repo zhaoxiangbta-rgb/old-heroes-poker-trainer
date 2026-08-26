@@ -4,6 +4,13 @@ import { positionLabel } from "../game/game";
 import { isNoActionPlayback } from "../game/playback";
 import { mobileVisualSeat } from "./mobileSeatLayout";
 
+const PLAYER_EMBLEMS = ["狼", "鲤", "隼", "發", "✥", "♞"] as const;
+
+function emblemForPlayer(playerId: string, seat: number) {
+  void playerId;
+  return PLAYER_EMBLEMS[seat % PLAYER_EMBLEMS.length];
+}
+
 export function MobilePokerTable({
   game,
   phase,
@@ -83,7 +90,12 @@ export function MobilePokerTable({
           game.players.length,
         );
         const isHero = player.seat === game.heroSeat;
+        const holeMoved = isHero && phase === "hero-turn";
+        const emblem = isHero ? "你" : emblemForPlayer(player.playerId, player.seat);
         const thinking = phase === "bot-thinking" && visibleActor === player.seat;
+        const chipToken = [...visualTokens]
+          .reverse()
+          .find((token) => token.actorSeat === player.seat && token.effect === "chips");
         const acting =
           phase !== "dealing-hole" &&
           game.phase === "playing" &&
@@ -103,10 +115,12 @@ export function MobilePokerTable({
             data-testid={`mobile-seat-${player.seat}`}
             data-engine-seat={player.seat}
             data-visual-seat={visualSeat}
+            data-emblem={emblem}
+            data-hole-moved={holeMoved}
             key={player.seat}
           >
-            <div className="mobile-player-identity" aria-hidden="true">
-              {isHero ? "你" : player.name.slice(0, 1)}
+            <div className={`mobile-player-identity emblem-${visualSeat}`} aria-hidden="true">
+              {emblem}
             </div>
             <div className="mobile-player-meta">
               <b>{player.name}</b>
@@ -114,7 +128,7 @@ export function MobilePokerTable({
               <strong>{player.allIn ? "ALL IN" : player.stack}</strong>
             </div>
             <div className={isHero ? "mobile-hole mobile-hero-hole" : "mobile-hole"}>
-              {visibleCards.map((card, index) => (
+              {!holeMoved && visibleCards.map((card, index) => (
                 <PlayingCard
                   card={isHero || player.revealed ? card : undefined}
                   back={!isHero && !player.revealed}
@@ -136,6 +150,17 @@ export function MobilePokerTable({
             ) : null}
             {thinking ? (
               <span className="mobile-thinking" aria-label={`${player.name}正在思考`}>
+                <i />
+                <i />
+                <i />
+              </span>
+            ) : null}
+            {chipToken ? (
+              <span
+                className={`mobile-chip-flight flight-seat-${visualSeat}`}
+                data-testid={`mobile-chip-flight-${player.seat}`}
+                aria-hidden="true"
+              >
                 <i />
                 <i />
                 <i />

@@ -16,8 +16,8 @@ test("mobile app restarts from its cache while offline", async ({ page, context 
   const slider = page.getByRole("slider", { name: "本街投入到" });
   await expect(slider).toBeVisible();
   await slider.fill(await slider.getAttribute("max") ?? "0");
-  await expect(page.getByTestId("mobile-selected-amount")).toHaveText("ALL IN");
-  await page.getByRole("button", { name: "加注", exact: true }).click();
+  await expect(page.getByTestId("mobile-rail-amount")).toHaveText("ALL IN");
+  await page.getByRole("button", { name: "ALL IN", exact: true }).click();
   await expect(page.getByRole("region", { name: "行动选择" })).toBeHidden();
 });
 

@@ -36,8 +36,32 @@ describe("MobilePokerTable", () => {
     );
     expect(screen.getByText(`底池 ${game.pot}`)).toBeVisible();
     expect(screen.getByText("轮到你")).toBeVisible();
-    expect(document.querySelectorAll(".mobile-hero-hole .card")).toHaveLength(2);
+    expect(document.querySelectorAll(".mobile-hero-hole .card")).toHaveLength(0);
+    expect(screen.getByTestId(`mobile-seat-${game.heroSeat}`)).toHaveAttribute(
+      "data-hole-moved",
+      "true",
+    );
     expect(game.players[game.heroSeat].seat).toBe(game.heroSeat);
+  });
+
+  it("gives opponents stable and visibly different emblems", () => {
+    const game = newGame(42);
+    render(
+      <MobilePokerTable
+        game={game}
+        phase="hero-turn"
+        frame={undefined}
+        visualTokens={[]}
+        recentActions={[]}
+        themeId="classic-green"
+      />,
+    );
+    const emblems = game.players
+      .filter((player) => player.seat !== game.heroSeat)
+      .map((player) =>
+        screen.getByTestId(`mobile-seat-${player.seat}`).getAttribute("data-emblem"),
+      );
+    expect(new Set(emblems).size).toBe(emblems.length);
   });
 
   it("shows names, Chinese positions, stacks, wagers, and folded state", () => {
@@ -82,5 +106,28 @@ describe("MobilePokerTable", () => {
       .toBeGreaterThan(0);
     expect(document.querySelectorAll(".mobile-seat:not(.hero) .card.face-up"))
       .toHaveLength(0);
+  });
+
+  it("throws a short staggered chip stack for a wagering token", () => {
+    const game = newGame(42);
+    const actorSeat = game.players.find((player) => player.seat !== game.heroSeat)!.seat;
+    render(
+      <MobilePokerTable
+        game={game}
+        phase="animating-chips"
+        frame={undefined}
+        visualTokens={[{
+          id: 99,
+          effect: "chips",
+          actorSeat,
+          action: game.log.at(-1),
+          expiresAt: Date.now() + 300,
+        }]}
+        recentActions={[]}
+        themeId="classic-green"
+      />,
+    );
+    const flight = screen.getByTestId(`mobile-chip-flight-${actorSeat}`);
+    expect(flight.querySelectorAll("i")).toHaveLength(3);
   });
 });

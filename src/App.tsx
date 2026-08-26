@@ -13,7 +13,7 @@ import { isNoActionPlayback } from "./game/playback";
 import { PokerTable } from "./components/PokerTable";
 import { MobilePokerTable } from "./mobile/MobilePokerTable";
 import { ActionControls } from "./components/ActionControls";
-import { MobileActionSheet } from "./mobile/MobileActionSheet";
+import { MobileFloatingControls } from "./mobile/MobileFloatingControls";
 import { HistoryPage } from "./components/HistoryPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { SpecialTrainingPage } from "./components/SpecialTrainingPage";
@@ -226,7 +226,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
             )}
             {game.phase === "playing" && !noActionPlayback ? (
               mobile ? (
-                phase === "hero-turn" ? <MobileActionSheet game={game} busy={busy} receipt={receipt} onAction={submit} /> : null
+                phase === "hero-turn" ? <MobileFloatingControls game={game} busy={busy} receipt={receipt} onAction={submit} /> : null
               ) : (
                 <ActionControls game={game} busy={busy} receipt={receipt} onAction={submit} />
               )

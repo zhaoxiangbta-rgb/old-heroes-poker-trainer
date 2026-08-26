@@ -84,12 +84,17 @@ export function useGamePlayback(
     }
     const generation = generationRef.current;
     if (frame.effect !== "receipt") {
+      const visualDuration = frame.effect === "chips"
+        ? Math.max(frame.durationMs, 340)
+        : frame.effect === "all-in"
+          ? Math.max(frame.durationMs, 520)
+          : frame.durationMs;
       const token: VisualToken = {
         id: frame.id,
         effect: frame.effect,
         actorSeat: frame.actorSeat,
         action: frame.action,
-        expiresAt: Date.now() + frame.durationMs,
+        expiresAt: Date.now() + visualDuration,
       };
       setVisualTokens((current) => [
         ...current.filter((item) => item.id !== token.id),
@@ -100,7 +105,7 @@ export function useGamePlayback(
         setVisualTokens((current) =>
           current.filter((item) => item.id !== token.id),
         );
-      }, frame.durationMs);
+      }, visualDuration);
     }
     const timer = schedule(() => {
       if (generation !== generationRef.current) return;
