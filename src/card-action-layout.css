@@ -137,3 +137,5 @@
   .felt { height: 430px; }
   .seat3, .seat4 { bottom: -2%; }
 }
+.card-rank{font:900 1em/.88 Georgia,"Times New Roman",serif}
+.suit-symbol{font-size:.78em;line-height:1}

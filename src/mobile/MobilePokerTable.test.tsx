@@ -44,7 +44,7 @@ describe("MobilePokerTable", () => {
     expect(game.players[game.heroSeat].seat).toBe(game.heroSeat);
   });
 
-  it("gives opponents stable and visibly different emblems", () => {
+  it("gives every player a local photographic avatar", () => {
     const game = newGame(42);
     render(
       <MobilePokerTable
@@ -56,13 +56,13 @@ describe("MobilePokerTable", () => {
         themeId="classic-green"
       />,
     );
-    const emblems = game.players
-      .filter((player) => player.seat !== game.heroSeat)
-      .map((player) =>
-        screen.getByTestId(`mobile-seat-${player.seat}`).getAttribute("data-emblem"),
-      );
-    expect(new Set(emblems).size).toBe(emblems.length);
-    expect(document.querySelectorAll(".mobile-player-identity svg[data-avatar-art]")).toHaveLength(game.players.length);
+    const portraits = [...document.querySelectorAll<HTMLImageElement>(".mobile-player-identity img")];
+    expect(portraits).toHaveLength(game.players.length);
+    expect(new Set(portraits.map((portrait) => portrait.src)).size).toBe(game.players.length);
+    portraits.forEach((portrait) => {
+      expect(portrait.getAttribute("src")).toMatch(/^\/assets\/mobile-casino\/avatars\//);
+      expect(portrait.alt).not.toBe("");
+    });
   });
 
   it("shows names, Chinese positions, stacks, wagers, and folded state", () => {

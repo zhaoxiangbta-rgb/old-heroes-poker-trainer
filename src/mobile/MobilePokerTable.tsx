@@ -124,7 +124,7 @@ export function MobilePokerTable({
             key={player.seat}
           >
             <div className={`mobile-player-identity emblem-${visualSeat}`} aria-hidden="true">
-              <MobilePlayerAvatar variant={visualSeat} />
+              <MobilePlayerAvatar playerId={player.playerId} seat={visualSeat} name={player.name} />
             </div>
             <div className="mobile-player-meta">
               <b>{player.name}</b>

@@ -94,4 +94,11 @@ describe("MobileFloatingControls", () => {
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(call).toBeDisabled();
   });
+
+  it("uses the compact casino dock and tactile chip controls", () => {
+    renderControls(facingBetGame());
+    expect(screen.getByRole("region", { name: "行动选择" })).toHaveClass("mobile-casino-dock");
+    expect(screen.getByRole("button", { name: "弃牌" })).toHaveClass("mobile-chip-control", "chip-fold");
+    expect(screen.getByRole("button", { name: "跟注 6" })).toHaveClass("mobile-chip-control", "chip-primary");
+  });
 });

@@ -91,3 +91,68 @@
 .mobile-seat:not(.hero) .mobile-hole .card:nth-child(2){left:calc(100% + 19px)}
 .mobile-seat.mobile-seat-1:not(.hero) .mobile-hole .card,.mobile-seat.mobile-seat-2:not(.hero) .mobile-hole .card{left:-58px}
 .mobile-seat.mobile-seat-1:not(.hero) .mobile-hole .card:nth-child(2),.mobile-seat.mobile-seat-2:not(.hero) .mobile-hole .card:nth-child(2){left:-43px}
+
+/* Photoreal casino skin: all imagery is local and available offline. */
+.mobile-poker-table{
+  background-color:#09271f;
+  background-image:linear-gradient(#06332722,#03110d66),url('/assets/mobile-casino/textures/felt.jpg');
+  background-size:auto,560px 560px;
+  box-shadow:inset 0 0 90px #000b;
+}
+.mobile-poker-table::before{
+  border:10px solid #171714;
+  background:transparent;
+  box-shadow:0 0 0 2px #b98b3b,inset 0 0 0 2px #d4b76a66,inset 0 0 70px #0007;
+}
+.mobile-table-ring{border-color:#e1b85a88;box-shadow:0 0 0 5px #050806aa}
+.mobile-player-identity{
+  border:2px solid #c39a50;
+  background:#080d0b;
+  box-shadow:0 0 0 3px #161713,0 7px 16px #000b;
+}
+.mobile-player-identity img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 36%;user-select:none}
+.mobile-player-meta{
+  border-color:#8e7040;
+  background-color:#0b100e;
+  background-image:linear-gradient(#111713e8,#050807f2),url('/assets/mobile-casino/textures/leather.jpg');
+  background-size:auto,320px;
+  box-shadow:inset 0 0 0 1px #ead3981f,0 6px 14px #000b;
+}
+.mobile-board .card,.mobile-floating-hole .card{
+  box-sizing:border-box;
+  display:grid;
+  grid-template-rows:auto 1fr;
+  justify-items:center;
+  align-items:center;
+  padding:5px 3px;
+  border:1px solid #d6c69c;
+  border-radius:6px;
+  background:#f4efdf;
+  box-shadow:0 4px 7px #0008,inset 0 0 8px #8e744624;
+}
+.mobile-board .card-rank{font-size:25px}.mobile-board .suit-symbol{font-size:31px;line-height:.8}
+.mobile-floating-hole .card-rank{font-size:31px}.mobile-floating-hole .suit-symbol{font-size:39px;line-height:.8}
+.mobile-board .suit-red,.mobile-floating-hole .suit-red{color:#b72e27}.mobile-board .suit-black,.mobile-floating-hole .suit-black{color:#10110f}
+.mobile-chip-control{
+  min-width:44px;min-height:48px;
+  border-radius:999px!important;
+  background-color:#17130f!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:118% 118%!important;
+  transition:transform 100ms ease,filter 100ms ease!important;
+  text-shadow:0 1px 2px #0008;
+}
+.mobile-chip-control.chip-fold{background-image:url('/assets/mobile-casino/controls/chip-fold.jpg')!important;color:#fff4e8!important}
+.mobile-chip-control.chip-primary{background-image:url('/assets/mobile-casino/controls/chip-primary.jpg')!important;color:#17120b!important;text-shadow:0 1px #fff8!important}
+.mobile-chip-control.chip-all-in{background-image:url('/assets/mobile-casino/controls/chip-all-in.jpg')!important;color:#ffe39a!important;text-shadow:0 0 9px #efbd47,0 2px 3px #000!important;animation:mobile-all-in-button 420ms ease-out 1!important}
+.mobile-chip-control:active{transform:translateY(2px) scale(.97);filter:brightness(.86)}
+.mobile-chip-control:focus-visible{outline:3px solid #f2cb6c;outline-offset:2px}
+.mobile-casino-dock{
+  background-color:#080b09!important;
+  background-image:linear-gradient(#040705eb,#090c0afb),url('/assets/mobile-casino/textures/leather.jpg')!important;
+  background-size:auto,420px!important;
+}
+.mobile-chip-flight i{animation-duration:260ms}
+.mobile-all-in-overlay{animation-duration:420ms}
+@media (prefers-reduced-motion:reduce){.mobile-chip-control,.mobile-chip-flight i,.mobile-all-in-overlay{animation:none!important;transition:none!important}}

@@ -63,7 +63,7 @@ export function MobileFloatingControls({
   };
 
   return (
-    <section className="mobile-floating-controls mobile-action-dock" aria-label="行动选择">
+    <section className="mobile-floating-controls mobile-action-dock mobile-casino-dock" aria-label="行动选择">
       <div className="mobile-floating-hole" aria-label="你的手牌">
         <div className="mobile-floating-hole-cards">
           {hero.hole.map((card) => (
@@ -88,18 +88,18 @@ export function MobileFloatingControls({
 
       <div className="mobile-floating-actions">
         {game.legal.canFold ? (
-          <button className="mobile-fold-chip" disabled={locked} onClick={() => send({ type: "fold" })}>
+          <button className="mobile-fold-chip mobile-chip-control chip-fold" disabled={locked} onClick={() => send({ type: "fold" })}>
             弃牌
           </button>
         ) : null}
         {game.legal.canCheck ? (
-          <button className="mobile-check-chip" disabled={locked} onClick={() => send({ type: "check" })}>
+          <button className="mobile-check-chip mobile-chip-control chip-primary" disabled={locked} onClick={() => send({ type: "check" })}>
             过牌
           </button>
         ) : null}
         {primary ? (
           <button
-            className={`mobile-primary-chip mode-${primary.mode}`}
+            className={`mobile-primary-chip mobile-chip-control ${primary.mode === "all-in" ? "chip-all-in" : "chip-primary"} mode-${primary.mode}`}
             disabled={locked}
             onClick={() => send(primary.action)}
           >

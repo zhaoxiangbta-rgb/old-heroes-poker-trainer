@@ -14,10 +14,17 @@ async function walk(directory) {
 await walk(root);
 const required = ["index.html", "manifest.webmanifest", "service-worker.js", "recovery.html", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 for (const name of required) if (!files.includes(join(root, name))) throw new Error(`mobile bundle missing: ${name}`);
+const casinoRoot = join(root, "assets", "mobile-casino");
+const portraits = files.filter((path) => path.startsWith(join(casinoRoot, "avatars")) && /player-0[1-6]\.jpg$/.test(path));
+if (portraits.length !== 6) throw new Error(`mobile bundle requires exactly six portraits, found ${portraits.length}`);
+for (const relative of ["textures/felt.jpg", "textures/leather.jpg", "controls/chip-fold.jpg", "controls/chip-primary.jpg", "controls/chip-all-in.jpg"]) {
+  if (!files.includes(join(casinoRoot, relative))) throw new Error(`mobile casino asset missing: ${relative}`);
+}
 const forbidden = ["SENTINEL-DESKTOP-SECRET", "player-names.local.json", "Bella", "哈队", "倪少", "零哥", "Q大爷", "董秘"];
 for (const file of files.filter((path) => /\.(html|js|css|json)$/.test(path))) {
   const content = await readFile(file, "utf8");
   for (const needle of forbidden) if (content.includes(needle)) throw new Error(`forbidden mobile bundle content: ${needle}`);
+  if (/https?:\/\/[^)'"\s]+\.(?:png|jpe?g|webp|gif)/i.test(content)) throw new Error(`remote image URL in mobile bundle: ${file}`);
   if (/192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+/.test(content)) throw new Error(`fixed private address in mobile bundle: ${file}`);
 }
 const index = await readFile(join(root, "index.html"), "utf8");

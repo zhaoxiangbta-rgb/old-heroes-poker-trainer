@@ -14,6 +14,6 @@ export default defineConfig({
   webServer: {
     command: "node scripts/serve-pwa.mjs",
     url: "http://127.0.0.1:4178/",
-    reuseExistingServer: false,
+    reuseExistingServer: true,
   },
 });

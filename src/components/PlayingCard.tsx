@@ -23,9 +23,10 @@ export function PlayingCard({
     <span
       className={`card face-up ${color} ${className}`.trim()}
       data-card-kind="face-up"
+      aria-label={card}
     >
-      {card[0]}
-      <small className={`suit-symbol ${color}`}>{symbols[card[1]]}</small>
+      <b className="card-rank">{card[0]}</b>
+      <small className={`suit-symbol ${color}`} aria-hidden="true">{symbols[card[1]]}</small>
     </span>
   );
 }

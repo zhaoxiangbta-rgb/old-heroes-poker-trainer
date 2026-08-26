@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,10 +7,36 @@ const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const assetNames = ["manifest.webmanifest", "recovery.html"];
 const iconNames = ["icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
+async function copyTree(source, destination, urlPrefix) {
+  const copied = [];
+  let entries;
+  try {
+    entries = await readdir(source, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return copied;
+    throw error;
+  }
+  for (const entry of entries) {
+    const sourcePath = join(source, entry.name);
+    const destinationPath = join(destination, entry.name);
+    const url = `${urlPrefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      await mkdir(destinationPath, { recursive: true });
+      copied.push(...await copyTree(sourcePath, destinationPath, url));
+    } else {
+      await mkdir(dirname(destinationPath), { recursive: true });
+      await copyFile(sourcePath, destinationPath);
+      copied.push(url);
+    }
+  }
+  return copied;
+}
+
 export async function buildPwaAssets({
   distDir = join(projectRoot, "dist/mobile"),
   sourceDir = join(projectRoot, "mobile"),
   iconDir = join(projectRoot, "public/pwa"),
+  publicDir = join(projectRoot, "public"),
   version,
 } = {}) {
   if (!version) {
@@ -24,12 +50,19 @@ export async function buildPwaAssets({
   const indexPath = join(distDir, "index.html");
   const index = (await readFile(indexPath, "utf8"))
     .replace(/href="[^"]*manifest-[^"]+\.webmanifest"/, 'href="./manifest.webmanifest"');
-  const referencedAssets = [...index.matchAll(/\/assets\/([A-Za-z0-9._-]+)/g)].map((match) => match[1]);
+  const referencedAssets = [...index.matchAll(/\/assets\/([A-Za-z0-9._-]+)/g)]
+    .map((match) => match[1])
+    .filter((name) => name.includes("."));
   if (referencedAssets.length) await mkdir(join(distDir, "assets"), { recursive: true });
   for (const name of referencedAssets) await copyFile(join(dirname(distDir), "assets", name), join(distDir, "assets", name));
   await writeFile(indexPath, index.replaceAll('/assets/', './assets/'));
 
-  const precache = ["./index.html", ...assetNames.map((name) => `./${name}`), ...iconNames.map((name) => `./${name}`), ...referencedAssets.map((name) => `./assets/${name}`)];
+  const casinoAssets = await copyTree(
+    join(publicDir, "assets", "mobile-casino"),
+    join(distDir, "assets", "mobile-casino"),
+    "./assets/mobile-casino",
+  );
+  const precache = ["./index.html", ...assetNames.map((name) => `./${name}`), ...iconNames.map((name) => `./${name}`), ...referencedAssets.map((name) => `./assets/${name}`), ...casinoAssets];
   const hash = createHash("sha256");
   for (const url of precache) hash.update(await readFile(join(distDir, url.slice(2))));
   const cacheName = `old-heroes-pwa-${version}-${hash.digest("hex").slice(0, 12)}`;

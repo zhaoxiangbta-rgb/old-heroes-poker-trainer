@@ -59,3 +59,25 @@ test("uses relative manifest navigation so GitHub Pages subpaths work", async ()
   assert.equal(manifest.scope, "./");
   assert.match(await readFile(join(distDir, "index.html"), "utf8"), /href="\.\/manifest\.webmanifest"/);
 });
+
+test("recursively copies and precaches mobile casino assets", async () => {
+  const root = await mkdtemp(join(tmpdir(), "old-heroes-assets-"));
+  const distDir = join(root, "dist", "mobile");
+  const sourceDir = join(root, "mobile");
+  const iconDir = join(root, "icons");
+  const publicDir = join(root, "public");
+  await mkdir(distDir, { recursive: true });
+  await mkdir(sourceDir, { recursive: true });
+  await mkdir(iconDir, { recursive: true });
+  await mkdir(join(publicDir, "assets", "mobile-casino", "avatars"), { recursive: true });
+  await writeFile(join(distDir, "index.html"), "<!doctype html>");
+  await writeFile(join(sourceDir, "manifest.webmanifest"), "{}");
+  await writeFile(join(sourceDir, "recovery.html"), "recovery");
+  await writeFile(join(sourceDir, "service-worker.template.js"), "const CACHE_NAME=__CACHE_NAME__;const APP_VERSION=__APP_VERSION__;const PRECACHE=__PRECACHE__;__WORKER_BODY__");
+  for (const file of ["icon-192.png", "icon-512.png", "apple-touch-icon.png"]) await writeFile(join(iconDir, file), file);
+  await writeFile(join(publicDir, "assets", "mobile-casino", "avatars", "player-01.jpg"), "portrait");
+
+  const result = await buildPwaAssets({ distDir, sourceDir, iconDir, publicDir, version: "1.0.0" });
+  await access(join(distDir, "assets", "mobile-casino", "avatars", "player-01.jpg"));
+  assert.ok(result.precache.includes("./assets/mobile-casino/avatars/player-01.jpg"));
+});
