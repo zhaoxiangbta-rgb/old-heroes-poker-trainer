@@ -156,3 +156,165 @@
 .mobile-chip-flight i{animation-duration:260ms}
 .mobile-all-in-overlay{animation-duration:420ms}
 @media (prefers-reduced-motion:reduce){.mobile-chip-control,.mobile-chip-flight i,.mobile-all-in-overlay{animation:none!important;transition:none!important}}
+
+/* Compact horizontal snapping rail and balanced three-column action dock. */
+.mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{
+  height:calc(100dvh - 310px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height:446px;
+}
+.mobile-floating-controls.mobile-action-dock{
+  height:146px;
+}
+.mobile-horizontal-bet-rail{
+  position:absolute;
+  z-index:4;
+  left:12px;
+  right:12px;
+  top:3px;
+  height:51px;
+  pointer-events:auto;
+}
+.mobile-horizontal-bet-rail .mobile-rail-amount{
+  position:absolute;
+  z-index:5;
+  left:50%;
+  top:0;
+  transform:translateX(-50%);
+  min-width:42px;
+  padding:1px 8px;
+  border-color:#8d703b;
+  border-radius:999px;
+  font-size:12px;
+}
+.mobile-horizontal-track{
+  position:absolute;
+  left:5px;
+  right:5px;
+  top:17px;
+  height:34px;
+}
+.mobile-horizontal-track::before{
+  content:"";
+  position:absolute;
+  left:8px;
+  right:8px;
+  top:12px;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#edcf7e,#8b6123);
+  box-shadow:0 0 0 2px #070907,0 1px 8px #d7a94366;
+}
+.mobile-horizontal-track .mobile-bet-slider{
+  position:absolute;
+  z-index:4;
+  inset:0;
+  width:100%;
+  height:27px;
+  margin:0;
+  appearance:none;
+  -webkit-appearance:none;
+  writing-mode:horizontal-tb;
+  direction:ltr;
+  background:transparent;
+  cursor:ew-resize;
+}
+.mobile-horizontal-track .mobile-bet-slider::-webkit-slider-runnable-track{height:27px;background:transparent}
+.mobile-horizontal-track .mobile-bet-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:27px;
+  height:27px;
+  border:2px solid #f3d47d;
+  border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#ffe6a0,#b77d2b 48%,#4e310d 74%);
+  box-shadow:0 0 0 3px #151109,0 3px 8px #000,0 0 9px #e5b44388;
+}
+.mobile-horizontal-track .mobile-bet-slider::-moz-range-track{height:3px;background:transparent}
+.mobile-horizontal-track .mobile-bet-slider::-moz-range-thumb{width:23px;height:23px;border:2px solid #f3d47d;border-radius:50%;background:#bd8430;box-shadow:0 0 0 3px #151109}
+.mobile-rail-nodes{position:absolute;z-index:5;left:13px;right:13px;top:4px;height:30px;pointer-events:none}
+.mobile-rail-nodes span{
+  position:absolute;
+  left:var(--node-left);
+  top:20px;
+  transform:translateX(-50%);
+  color:#d5bc7a;
+  font-size:10px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.mobile-rail-nodes span::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:-13px;
+  width:7px;
+  height:7px;
+  transform:translateX(-50%);
+  border:1px solid #e2bd62;
+  border-radius:50%;
+  background:#21170a;
+}
+.mobile-rail-nodes span.active{color:#ffe094;text-shadow:0 0 7px #e6b33c}
+.mobile-rail-nodes span.active::before{background:#f4c75e;box-shadow:0 0 10px #efb733}
+.mobile-rail-nodes span[data-node="min"]{transform:none}.mobile-rail-nodes span[data-node="min"]::before{left:3px}
+.mobile-rail-nodes span[data-node="all-in"]{transform:translateX(-100%);font:italic 800 10px Georgia,serif;color:#efc968}.mobile-rail-nodes span[data-node="all-in"]::before{left:calc(100% - 3px)}
+.mobile-player-bankroll{
+  position:absolute;
+  left:max(10px,env(safe-area-inset-left));
+  bottom:5px;
+  width:96px;
+  height:84px;
+  display:grid;
+  grid-template-rows:42px auto auto;
+  place-items:center;
+  gap:0;
+  color:#e8d9b5;
+  pointer-events:none;
+}
+.mobile-bankroll-stack{position:relative;width:68px;height:39px}
+.mobile-bankroll-stack i{position:absolute;bottom:0;width:37px;height:37px;border-radius:50%;background:center/118% url('/assets/mobile-casino/controls/chip-fold.jpg');box-shadow:0 3px 7px #000c}
+.mobile-bankroll-stack i:nth-child(1){left:0;transform:rotate(-12deg)}
+.mobile-bankroll-stack i:nth-child(2){left:17px;bottom:5px;background-image:url('/assets/mobile-casino/controls/chip-primary.jpg')}
+.mobile-bankroll-stack i:nth-child(3){right:0;transform:rotate(12deg);background-image:url('/assets/mobile-casino/controls/chip-all-in.jpg')}
+.mobile-player-bankroll strong{padding:1px 8px;border:1px solid #725d36;border-radius:999px;background:#080e0bdc;color:#f2dfae;font-size:11px}
+.mobile-player-bankroll small{font-size:9px;color:#b9ad92}
+.mobile-action-dock .mobile-centered-hole{
+  left:50%;
+  bottom:5px;
+  width:116px;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 7px 10px #000a);
+}
+.mobile-action-dock .mobile-centered-hole>small,.mobile-action-dock .mobile-centered-hole>strong{display:none}
+.mobile-action-dock .mobile-right-actions{
+  right:max(8px,env(safe-area-inset-right));
+  bottom:4px;
+  width:98px;
+  height:86px;
+  display:grid;
+  grid-template-columns:repeat(2,44px);
+  grid-auto-rows:42px;
+  justify-content:end;
+  align-content:center;
+  gap:2px 4px;
+}
+.mobile-action-dock .mobile-right-actions button{width:44px;min-width:44px;min-height:42px;height:42px;padding:2px;font-size:11px}
+.mobile-action-dock .mobile-right-actions button:last-child:nth-child(odd){grid-column:1/3;justify-self:center}
+.mobile-action-dock .mobile-floating-error,.mobile-action-dock .mobile-floating-receipt{bottom:91px}
+
+@media (max-height:820px) and (orientation:portrait){
+  .mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{height:calc(100dvh - 306px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0}
+  .mobile-floating-controls.mobile-action-dock{height:142px}
+  .mobile-horizontal-bet-rail{left:8px;right:8px}
+  .mobile-action-dock .mobile-centered-hole{bottom:2px}
+  .mobile-player-bankroll{bottom:2px}
+  .mobile-action-dock .mobile-right-actions{bottom:1px}
+}
+
+@media (orientation:landscape) and (max-height:500px){
+  .mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{width:62vw;height:calc(100dvh - 79px - env(safe-area-inset-top));min-height:0}
+  .mobile-floating-controls.mobile-action-dock{left:62vw;right:0;top:43px;bottom:calc(50px + env(safe-area-inset-bottom));height:auto}
+  .mobile-horizontal-bet-rail{left:8px;right:8px;top:2px}
+  .mobile-player-bankroll{left:5px;bottom:5px;transform:scale(.86);transform-origin:left bottom}
+  .mobile-action-dock .mobile-centered-hole{left:50%;bottom:5px;transform:translateX(-50%);transform-origin:center bottom}
+  .mobile-action-dock .mobile-right-actions{right:4px;bottom:5px;transform:none;transform-origin:right bottom}
+}

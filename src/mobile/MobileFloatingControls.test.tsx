@@ -66,13 +66,15 @@ describe("MobileFloatingControls", () => {
     expect(onAction).toHaveBeenCalledWith({ type: "raise", to: 14 });
   });
 
-  it("shows only the requested presets and selecting one does not submit", () => {
+  it("integrates sizing landmarks into the rail without submitting", () => {
     const { onAction } = renderControls(facingBetGame());
-    expect(screen.getByRole("button", { name: "半池" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "2/3池" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "底池" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "最小" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "半池" }));
+    expect(screen.getByText("最低")).toBeVisible();
+    expect(screen.getByText("½")).toBeVisible();
+    expect(screen.getByText("⅔")).toBeVisible();
+    expect(screen.getByText("1×")).toBeVisible();
+    expect(screen.getByText("ALL IN")).toBeVisible();
+    expect(document.querySelector(".mobile-floating-presets")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "8" } });
     expect(onAction).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
   });
@@ -100,5 +102,14 @@ describe("MobileFloatingControls", () => {
     expect(screen.getByRole("region", { name: "行动选择" })).toHaveClass("mobile-casino-dock");
     expect(screen.getByRole("button", { name: "弃牌" })).toHaveClass("mobile-chip-control", "chip-fold");
     expect(screen.getByRole("button", { name: "跟注 6" })).toHaveClass("mobile-chip-control", "chip-primary");
+  });
+
+  it("uses bankroll, centered cards, and legal actions as three columns", () => {
+    renderControls(facingBetGame());
+    expect(screen.getByRole("group", { name: "你的筹码信息" })).toHaveTextContent("余码");
+    expect(screen.getByRole("group", { name: "你的筹码信息" })).toHaveTextContent("你 ·");
+    expect(document.querySelectorAll(".mobile-centered-hole .card")).toHaveLength(2);
+    expect(document.querySelector(".mobile-right-actions")).toContainElement(screen.getByRole("button", { name: "弃牌" }));
+    expect(screen.getByTestId("mobile-horizontal-bet-rail")).toBeInTheDocument();
   });
 });

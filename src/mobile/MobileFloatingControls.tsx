@@ -2,14 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { PlayingCard } from "../components/PlayingCard";
 import { positionLabel, type GameAction, type GameState } from "../game/game";
 import {
-  mobileBetPresetTarget,
-  type MobileBetPreset,
-} from "./mobileBetSizing";
-import {
   mobileBetChoices,
   mobilePrimaryAction,
 } from "./mobilePrimaryAction";
-import { VerticalBetSlider } from "./VerticalBetSlider";
+import { HorizontalBetSlider } from "./HorizontalBetSlider";
+import { mobileBetRailNodes } from "./mobileBetRail";
 
 type Props = {
   game: GameState;
@@ -17,12 +14,6 @@ type Props = {
   receipt: string;
   onAction(action: GameAction): void;
 };
-
-const presets: Array<{ id: MobileBetPreset; label: string }> = [
-  { id: "half-pot", label: "半池" },
-  { id: "two-thirds-pot", label: "2/3池" },
-  { id: "pot", label: "底池" },
-];
 
 export function MobileFloatingControls({
   game,
@@ -37,6 +28,10 @@ export function MobileFloatingControls({
   const [error, setError] = useState("");
   const locked = busy || submitted;
   const primary = choices.length ? mobilePrimaryAction(game, amount) : null;
+  const nodes = useMemo(
+    () => game.legal.canRaise ? mobileBetRailNodes(game, choices) : [],
+    [game, choices],
+  );
 
   useEffect(() => {
     setAmount(choices[0] ?? 0);
@@ -55,29 +50,13 @@ export function MobileFloatingControls({
     }
   };
 
-  const choosePreset = (preset: MobileBetPreset) => {
-    if (!game.legal.canRaise || locked) return;
-    const target = mobileBetPresetTarget(game, preset);
-    setAmount(choices.includes(target) ? target : choices[0] ?? target);
-    setError("");
-  };
-
   return (
     <section className="mobile-floating-controls mobile-action-dock mobile-casino-dock" aria-label="行动选择">
-      <div className="mobile-floating-hole" aria-label="你的手牌">
-        <div className="mobile-floating-hole-cards">
-          {hero.hole.map((card) => (
-            <PlayingCard card={card} key={card} />
-          ))}
-        </div>
-        <small>你 · {positionLabel(hero.position).name}</small>
-        <strong>余码 {hero.stack}</strong>
-      </div>
-
       {choices.length > 1 ? (
-        <VerticalBetSlider
+        <HorizontalBetSlider
           choices={choices}
           value={amount}
+          nodes={nodes}
           disabled={locked}
           onChange={(value) => {
             setAmount(value);
@@ -86,7 +65,21 @@ export function MobileFloatingControls({
         />
       ) : null}
 
-      <div className="mobile-floating-actions">
+      <div className="mobile-player-bankroll" role="group" aria-label="你的筹码信息">
+        <span className="mobile-bankroll-stack" aria-hidden="true"><i /><i /><i /></span>
+        <strong>余码 {hero.stack}</strong>
+        <small>你 · {positionLabel(hero.position).name}</small>
+      </div>
+
+      <div className="mobile-floating-hole mobile-centered-hole" aria-label="你的手牌">
+        <div className="mobile-floating-hole-cards">
+          {hero.hole.map((card) => (
+            <PlayingCard card={card} key={card} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mobile-floating-actions mobile-right-actions">
         {game.legal.canFold ? (
           <button className="mobile-fold-chip mobile-chip-control chip-fold" disabled={locked} onClick={() => send({ type: "fold" })}>
             弃牌
@@ -108,15 +101,6 @@ export function MobileFloatingControls({
         ) : null}
       </div>
 
-      {game.legal.canRaise ? (
-        <div className="mobile-floating-presets">
-          {presets.map((preset) => (
-            <button key={preset.id} disabled={locked} onClick={() => choosePreset(preset.id)}>
-              {preset.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
       {receipt ? <p className="mobile-floating-receipt">{receipt}</p> : null}
       {error ? <p className="mobile-floating-error" role="alert">{error}</p> : null}
     </section>

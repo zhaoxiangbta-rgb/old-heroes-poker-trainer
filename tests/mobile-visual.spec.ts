@@ -8,6 +8,10 @@ for (const viewport of [{ name: "portrait", width: 430, height: 932 }, { name: "
     await expect(page.locator(".mobile-poker-table")).toBeVisible();
     await expect(page.getByRole("region", { name: "行动选择" })).toBeVisible();
     await expect(page.getByRole("slider", { name: "本街投入到" })).toBeVisible();
+    await expect(page.locator(".mobile-centered-hole .suit-symbol")).toHaveCount(2);
+    for (const suit of await page.locator(".mobile-centered-hole .suit-symbol").all()) {
+      await expect(suit).toBeVisible();
+    }
     await expect(page.locator(".mobile-pot")).toBeVisible();
     await expect(page.locator(".mobile-action-sheet")).toHaveCount(0);
     const metrics = await page.evaluate(() => ({
@@ -21,14 +25,16 @@ for (const viewport of [{ name: "portrait", width: 430, height: 932 }, { name: "
         return controls.left < table.right && controls.right > table.left && controls.top < table.bottom && controls.bottom > table.top;
       })(),
       action: (() => { const r = document.querySelector(".mobile-floating-actions")!.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width:r.width }; })(),
-      rail: (() => { const r = document.querySelector(".mobile-bet-rail")!.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width:r.width }; })(),
+      rail: (() => { const r = document.querySelector(".mobile-horizontal-bet-rail")!.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width:r.width, height:r.height }; })(),
+      slider: (() => { const r = document.querySelector(".mobile-bet-slider")!.getBoundingClientRect(); return { width:r.width,height:r.height }; })(),
+      dockHeight: document.querySelector(".mobile-floating-controls")!.getBoundingClientRect().height,
       hero: (() => { const r = document.querySelector(".mobile-seat-0")!.getBoundingClientRect(); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom }; })(),
       board: (() => { const r = document.querySelector(".mobile-board")!.getBoundingClientRect(); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom }; })(),
       avatarWidth: Math.max(...[...document.querySelectorAll(".mobile-player-identity")].map((avatar) => avatar.getBoundingClientRect().width)),
       boardCardWidth: document.querySelector(".mobile-board > *")!.getBoundingClientRect().width,
       heroCardWidth: document.querySelector(".mobile-floating-hole .card")!.getBoundingClientRect().width,
       railOverlapsBoard: (() => {
-        const rail = document.querySelector(".mobile-bet-rail")!.getBoundingClientRect();
+        const rail = document.querySelector(".mobile-horizontal-bet-rail")!.getBoundingClientRect();
         const board = document.querySelector(".mobile-board")!.getBoundingClientRect();
         return rail.left < board.right && rail.right > board.left && rail.top < board.bottom && rail.bottom > board.top;
       })(),
@@ -64,6 +70,13 @@ for (const viewport of [{ name: "portrait", width: 430, height: 932 }, { name: "
         const c = card.getBoundingClientRect();
         return c.left < 2 || c.right > innerWidth - 2;
       }).length,
+      dockColumnOverlaps: (() => {
+        const items = [".mobile-player-bankroll", ".mobile-centered-hole", ".mobile-right-actions"].map((selector) => document.querySelector(selector)!.getBoundingClientRect());
+        return items.some((a, index) => items.slice(index + 1).some((b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top));
+      })(),
+      undersizedActions: [...document.querySelectorAll(".mobile-right-actions button")].filter((button) => {
+        const r = button.getBoundingClientRect(); return r.width < 44 || r.height < 42;
+      }).length,
     }));
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(metrics.controlsOverlapTable).toBe(false);
@@ -73,7 +86,11 @@ for (const viewport of [{ name: "portrait", width: 430, height: 932 }, { name: "
     expect(metrics.action.width).toBeLessThanOrEqual(130);
     expect(metrics.rail.left).toBeGreaterThanOrEqual(0);
     expect(metrics.rail.right).toBeLessThanOrEqual(metrics.viewport + 1);
-    expect(metrics.rail.width).toBeLessThanOrEqual(90);
+    expect(metrics.rail.width).toBeLessThanOrEqual(metrics.controls.right - metrics.controls.left + 1);
+    expect(metrics.rail.width).toBeGreaterThan(220);
+    expect(metrics.rail.width).toBeGreaterThan(metrics.rail.height * 4);
+    expect(metrics.slider.width).toBeGreaterThan(metrics.slider.height * 4);
+    if (viewport.width === 430) expect(metrics.dockHeight).toBeLessThanOrEqual(150);
     expect(metrics.hero.left).toBeGreaterThanOrEqual(0);
     expect(metrics.hero.right).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(metrics.board.left).toBeGreaterThanOrEqual(0);
@@ -88,6 +105,8 @@ for (const viewport of [{ name: "portrait", width: 430, height: 932 }, { name: "
     expect(metrics.metaWagerOverlaps).toBe(0);
     expect(metrics.opponentCardInfoOverlaps).toBe(0);
     expect(metrics.opponentCardsOutOfBounds).toBe(0);
+    expect(metrics.dockColumnOverlaps).toBe(false);
+    expect(metrics.undersizedActions).toBe(0);
     expect(metrics.table.bottom).toBeGreaterThan(metrics.board.bottom);
     await page.screenshot({ path: `test-results/mobile-${viewport.name}.png`, fullPage: true });
   });
