@@ -188,7 +188,7 @@ function legalFor(s: GameState, seat: number): Legal {
       s.currentBet >= (s.raiseToReopen?.[seat] ?? 0) &&
       maxRaiseTo > s.currentBet;
   return {
-    canFold: callAmount > 0,
+    canFold: callAmount > 0 || seat === s.heroSeat,
     canCheck: callAmount === 0,
     canCall: callAmount > 0,
     canRaise,

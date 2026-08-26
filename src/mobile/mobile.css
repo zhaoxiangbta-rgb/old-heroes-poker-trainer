@@ -17,14 +17,14 @@
 .mobile-floating-controls button,.mobile-floating-controls input{pointer-events:auto}
 .mobile-floating-hole{position:absolute;left:max(13px,env(safe-area-inset-left));bottom:calc(126px + env(safe-area-inset-bottom));width:116px;display:grid;justify-items:center;gap:3px;filter:drop-shadow(0 8px 12px #000a)}
 .mobile-floating-hole-cards{display:flex;gap:3px}.mobile-floating-hole .card{width:49px;height:68px;padding:5px;font-size:23px}.mobile-floating-hole small{color:#cdbf9d;font-size:10px}.mobile-floating-hole strong{padding:3px 10px;border:1px solid #725d36;border-radius:999px;background:#08100de6;color:#e9dfc6;font-size:12px}
-.mobile-bet-rail{position:absolute;left:50%;bottom:calc(123px + env(safe-area-inset-bottom));transform:translateX(-50%);width:58px;height:263px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:8px 6px 9px;border:1px solid #8e6d35;border-radius:18px;background:linear-gradient(90deg,#080a09e8,#171712ee 50%,#070908e8);box-shadow:inset 0 0 0 2px #e1b85a19,0 10px 24px #0009}
+.mobile-bet-rail{position:absolute;left:50%;bottom:calc(123px + env(safe-area-inset-bottom));transform:translateX(-50%);width:58px;height:clamp(158px,calc(100dvh - 548px - env(safe-area-inset-bottom)),263px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:8px 6px 9px;border:1px solid #8e6d35;border-radius:18px;background:linear-gradient(90deg,#080a09e8,#171712ee 50%,#070908e8);box-shadow:inset 0 0 0 2px #e1b85a19,0 10px 24px #0009}
 .mobile-all-in-label{height:16px;color:#f1ce74;font:italic 900 12px Georgia,serif;letter-spacing:.08em;text-shadow:0 0 10px #e9b94180}
 .mobile-rail-amount{min-width:47px;padding:3px 4px;text-align:center;border:1px solid #564729;border-radius:7px;background:#090d0b;color:#f5deaa;font-size:14px;font-variant-numeric:tabular-nums}.mobile-rail-amount.all-in{color:#ffe08a;font:italic 900 11px Georgia,serif;text-shadow:0 0 9px #e5b436}
 .mobile-rail-track{position:relative;width:46px;flex:1;border:1px solid #5e5033;border-radius:12px;background:linear-gradient(90deg,#070908,#151814 48%,#070908);box-shadow:inset 0 0 10px #000}
 .mobile-rail-ticks{position:absolute;z-index:0;inset:11px 8px;background:repeating-linear-gradient(to top,transparent 0 14px,#9d814a88 14px 15px);border-left:1px solid #8c713d55;border-right:1px solid #8c713d55;pointer-events:none}
-.mobile-bet-slider{position:absolute;z-index:2;inset:4px 0;margin:auto;appearance:slider-vertical;-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:46px;height:190px;accent-color:#c59643;cursor:ns-resize;background:transparent}
+.mobile-bet-slider{position:absolute;z-index:2;inset:4px 0;margin:auto;appearance:slider-vertical;-webkit-appearance:slider-vertical;writing-mode:vertical-lr;direction:rtl;width:46px;height:calc(100% - 8px);accent-color:#c59643;cursor:ns-resize;background:transparent}
 .mobile-bet-slider::-webkit-slider-thumb{-webkit-appearance:none;width:27px;height:27px;border:2px solid #f2d27b;border-radius:50%;background:radial-gradient(circle at 38% 32%,#ffe7a4,#b47c2c 48%,#51320d 75%);box-shadow:0 0 0 3px #17130b,0 3px 8px #000,0 0 8px #e4b24380}
-.mobile-floating-actions{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:calc(127px + env(safe-area-inset-bottom));width:112px;display:grid;gap:11px}.mobile-floating-actions button{min-height:55px;padding:6px 7px;border-radius:999px;font-size:15px;font-weight:900;box-shadow:0 8px 15px #0009,inset 0 0 0 3px #ffffff12}.mobile-fold-chip{border:2px solid #a27352;background:radial-gradient(circle at 45% 35%,#71382a,#2a1512 72%);color:#f3dfd4}.mobile-check-chip{border:2px solid #7d8179;background:radial-gradient(circle at 45% 35%,#454941,#171a18 72%);color:#eee9db}.mobile-primary-chip{border:2px solid #b79a69;background:radial-gradient(circle at 45% 35%,#ede6d5,#8f8878 75%);color:#15130f}.mobile-primary-chip.mode-raise,.mobile-primary-chip.mode-bet{border-color:#d0a244;background:radial-gradient(circle at 45% 35%,#8b6929,#31230e 75%);color:#fff0bd}.mobile-primary-chip.mode-all-in{border-color:#f1ca64;background:radial-gradient(circle,#856020,#241707 75%);color:#ffe28a;font:italic 900 16px Georgia,serif;text-shadow:0 0 9px #efbd47;animation:mobile-all-in-button 1s ease-in-out infinite alternate}
+.mobile-floating-actions{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:calc(127px + env(safe-area-inset-bottom));width:112px;display:grid;gap:7px}.mobile-floating-actions button{min-height:48px;padding:5px 7px;border-radius:999px;font-size:14px;font-weight:900;box-shadow:0 8px 15px #0009,inset 0 0 0 3px #ffffff12}.mobile-fold-chip{border:2px solid #a27352;background:radial-gradient(circle at 45% 35%,#71382a,#2a1512 72%);color:#f3dfd4}.mobile-check-chip{border:2px solid #7d8179;background:radial-gradient(circle at 45% 35%,#454941,#171a18 72%);color:#eee9db}.mobile-primary-chip{border:2px solid #b79a69;background:radial-gradient(circle at 45% 35%,#ede6d5,#8f8878 75%);color:#15130f}.mobile-primary-chip.mode-raise,.mobile-primary-chip.mode-bet{border-color:#d0a244;background:radial-gradient(circle at 45% 35%,#8b6929,#31230e 75%);color:#fff0bd}.mobile-primary-chip.mode-all-in{border-color:#f1ca64;background:radial-gradient(circle,#856020,#241707 75%);color:#ffe28a;font:italic 900 16px Georgia,serif;text-shadow:0 0 9px #efbd47;animation:mobile-all-in-button 1s ease-in-out infinite alternate}
 .mobile-floating-presets{position:absolute;left:50%;bottom:calc(74px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(318px,calc(100vw - 42px));display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.mobile-floating-presets button{min-height:38px;border:1px solid #806a3d;border-radius:999px;background:#0b110ee8;color:#e9d9b5;font-size:14px;font-weight:800;box-shadow:0 6px 14px #0008}.mobile-floating-presets button:active{border-color:#e1b85a;background:#4a3717;transform:translateY(1px)}
 .mobile-floating-controls button:disabled{opacity:.5}.mobile-floating-error,.mobile-floating-receipt{position:absolute;left:50%;bottom:calc(116px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:4px 9px;border-radius:999px;background:#070b09e8;font-size:10px;white-space:nowrap}.mobile-floating-error{color:#ff9a8e}.mobile-floating-receipt{color:#b9c4bd}
 .mobile-seat-0[data-hole-moved="true"]{bottom:19%;width:98px;min-height:56px;opacity:.72}.mobile-seat-0[data-hole-moved="true"] .mobile-player-identity{display:none}.mobile-seat-0[data-hole-moved="true"] .mobile-player-meta{padding-top:0}.mobile-seat-0[data-hole-moved="true"] .mobile-player-meta b{display:none}
@@ -33,3 +33,61 @@
 .mobile-chip-flight{position:absolute;z-index:24;left:50%;top:50%;width:18px;height:18px;pointer-events:none}.mobile-chip-flight i{position:absolute;inset:0;border:2px dashed #f4eee0;border-radius:50%;background:radial-gradient(circle,#1f2221 0 36%,#d9d7ce 38% 55%,#282b29 57%);box-shadow:0 2px 5px #000a;animation:mobile-chip-throw 280ms cubic-bezier(.2,.75,.25,1) both}.mobile-chip-flight i:nth-child(2){animation-delay:28ms;transform:translate(-4px,3px)}.mobile-chip-flight i:nth-child(3){animation-delay:56ms;transform:translate(4px,5px)}.flight-seat-0{--chip-x:0px;--chip-y:-170px}.flight-seat-1{--chip-x:-86px;--chip-y:-115px}.flight-seat-2{--chip-x:-120px;--chip-y:105px}.flight-seat-3{--chip-x:0px;--chip-y:185px}.flight-seat-4{--chip-x:120px;--chip-y:105px}.flight-seat-5{--chip-x:86px;--chip-y:-115px}@keyframes mobile-chip-throw{0%{opacity:0;transform:translate(0,0) scale(.65) rotate(0)}18%{opacity:1}100%{opacity:1;transform:translate(var(--chip-x),var(--chip-y)) scale(.92) rotate(270deg)}}
 .mobile-all-in-overlay{inset:31% 8% auto;padding:0;border:0;background:transparent;box-shadow:none;animation:mobile-all-in-flash 180ms ease-out both}.mobile-all-in-overlay strong{font-size:47px;letter-spacing:.12em;background:linear-gradient(180deg,#fff2b7,#dda52f 55%,#7f5010);background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-stroke:1px #ffe79a;text-shadow:0 0 12px #f2c54a,0 5px 20px #000}.mobile-all-in-overlay span{margin-top:3px;color:#ffe2a0;font-weight:900;text-shadow:0 2px 8px #000}@keyframes mobile-all-in-flash{0%{opacity:0;transform:scale(.55)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}
 @media (orientation:landscape) and (max-height:500px){.mobile-floating-hole{left:5px;bottom:calc(62px + env(safe-area-inset-bottom));transform:scale(.72);transform-origin:left bottom}.mobile-bet-rail{left:78%;bottom:calc(59px + env(safe-area-inset-bottom));height:185px;transform:translateX(-50%) scale(.82);transform-origin:center bottom}.mobile-bet-slider{height:122px}.mobile-floating-actions{right:7px;bottom:calc(63px + env(safe-area-inset-bottom));width:94px}.mobile-floating-actions button{min-height:42px;font-size:12px}.mobile-floating-presets{left:77%;bottom:calc(55px + env(safe-area-inset-bottom));width:260px}.mobile-floating-presets button{min-height:30px;font-size:11px}}
+
+/* The action dock owns its own screen area; the table never sits underneath it. */
+.mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{height:calc(100dvh - 366px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:390px;max-height:none}
+.mobile-game-stage.has-action-dock .mobile-seat-3{top:14%}
+.mobile-player-identity{overflow:hidden;padding:0;background:#101815;color:transparent}
+.mobile-player-identity svg{display:block;width:100%;height:100%;filter:drop-shadow(0 2px 3px #0008)}
+.mobile-floating-controls.mobile-action-dock{inset:auto 0 calc(62px + env(safe-area-inset-bottom));height:202px;border-top:1px solid #69532b;background:linear-gradient(180deg,#050907f7,#090d0b 35%,#050806);box-shadow:0 -8px 24px #0008}
+.mobile-action-dock .mobile-floating-hole{left:max(10px,env(safe-area-inset-left));bottom:48px}
+.mobile-action-dock .mobile-bet-rail{bottom:47px;height:148px}
+.mobile-action-dock .mobile-floating-actions{right:max(10px,env(safe-area-inset-right));bottom:48px}
+.mobile-action-dock .mobile-floating-presets{bottom:7px}
+.mobile-action-dock .mobile-floating-error,.mobile-action-dock .mobile-floating-receipt{bottom:50px}
+
+@media (max-height:820px) and (orientation:portrait){
+  .mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{min-height:0}
+  .mobile-game-stage.has-action-dock .mobile-seat{width:94px;min-height:64px;transform:scale(.82)}
+  .mobile-game-stage.has-action-dock .mobile-seat-0{transform:translateX(-50%) scale(.82)}
+  .mobile-game-stage.has-action-dock .mobile-seat-3{transform:translateX(-50%) scale(.82)}
+  .mobile-game-stage.has-action-dock .mobile-seat-3{top:16%}
+  .mobile-game-stage.has-action-dock .mobile-player-meta{padding-top:13px}
+  .mobile-game-stage.has-action-dock .mobile-player-identity{width:36px;height:36px;top:-19px}
+  .mobile-game-stage.has-action-dock .mobile-pot{top:32%}
+  .mobile-game-stage.has-action-dock .mobile-board{top:43%}
+}
+
+@media (orientation:landscape) and (max-height:500px){
+  .mobile-client .mobile-game-stage.has-action-dock .mobile-poker-table{width:62vw;height:calc(100dvh - 79px - env(safe-area-inset-top));min-height:0}
+  .mobile-game-stage.has-action-dock .mobile-seat-3{top:16%}
+  .mobile-floating-controls.mobile-action-dock{left:62vw;right:0;top:43px;bottom:calc(50px + env(safe-area-inset-bottom));height:auto;border-top:0;border-left:1px solid #69532b}
+  .mobile-action-dock .mobile-floating-hole{left:5px;bottom:5px;transform:scale(.68)}
+  .mobile-action-dock .mobile-bet-rail{left:49%;bottom:5px;height:calc(100% - 10px);transform:translateX(-50%) scale(.78)}
+  .mobile-action-dock .mobile-floating-actions{right:6px;bottom:47px;width:88px}
+  .mobile-action-dock .mobile-floating-actions button{min-height:38px;font-size:11px}
+  .mobile-action-dock .mobile-floating-presets{left:50%;bottom:4px;width:95%;gap:4px}
+  .mobile-action-dock .mobile-floating-presets button{min-height:30px;font-size:10px}
+}
+
+/* Player information is three independent objects: avatar, stack plaque, wager chip. */
+.mobile-seat,.mobile-seat-0{padding:0;border-color:transparent;background:transparent;box-shadow:none}
+.mobile-player-identity{top:-44px}
+.mobile-player-meta{padding:5px 7px;border:1px solid #43564c;border-radius:10px;background:linear-gradient(180deg,#111b17f2,#080e0bf2);box-shadow:0 5px 13px #0009}
+.mobile-seat.hero .mobile-player-meta{border-color:#a78343;box-shadow:0 0 0 1px #d0a24435,0 6px 15px #000a}
+.mobile-seat.acting{border-color:transparent;box-shadow:none}
+.mobile-seat.acting .mobile-player-meta{border-color:#e1b454;box-shadow:0 0 0 2px #d0a24455,0 0 18px #d0a24442}
+.mobile-seat-0[data-hole-moved="true"] .mobile-player-meta{padding:5px 7px}
+.mobile-player-identity{top:-58px;width:52px;height:52px}
+.mobile-game-stage.has-action-dock .mobile-seat-3{left:64%}
+.mobile-game-stage.has-action-dock .mobile-seat-1,.mobile-game-stage.has-action-dock .mobile-seat-2{right:10%}
+.mobile-game-stage.has-action-dock .mobile-seat-4,.mobile-game-stage.has-action-dock .mobile-seat-5{left:10%}
+.mobile-board .card,.mobile-board .empty-card{width:48px;height:67px}.mobile-board .card{font-size:22px}
+.mobile-floating-hole .card{width:54px;height:76px;font-size:26px}
+.mobile-wager{bottom:-28px}
+@media (max-height:820px) and (orientation:portrait){.mobile-game-stage.has-action-dock .mobile-player-identity{top:-62px;width:56px;height:56px}}
+@media (orientation:landscape) and (max-height:500px){.mobile-game-stage.has-action-dock .mobile-player-identity{top:-66px;width:60px;height:60px}.mobile-game-stage.has-action-dock .mobile-seat-3{left:64%}.mobile-action-dock .mobile-floating-hole{transform:scale(1)}}
+.mobile-seat:not(.hero) .mobile-hole .card{top:5px;bottom:auto;left:calc(100% + 4px)}
+.mobile-seat:not(.hero) .mobile-hole .card:nth-child(2){left:calc(100% + 19px)}
+.mobile-seat.mobile-seat-1:not(.hero) .mobile-hole .card,.mobile-seat.mobile-seat-2:not(.hero) .mobile-hole .card{left:-58px}
+.mobile-seat.mobile-seat-1:not(.hero) .mobile-hole .card:nth-child(2),.mobile-seat.mobile-seat-2:not(.hero) .mobile-hole .card:nth-child(2){left:-43px}

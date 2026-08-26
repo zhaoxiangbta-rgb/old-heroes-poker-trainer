@@ -63,7 +63,7 @@ export function MobileFloatingControls({
   };
 
   return (
-    <section className="mobile-floating-controls" aria-label="行动选择">
+    <section className="mobile-floating-controls mobile-action-dock" aria-label="行动选择">
       <div className="mobile-floating-hole" aria-label="你的手牌">
         <div className="mobile-floating-hole-cards">
           {hero.hole.map((card) => (
@@ -91,7 +91,8 @@ export function MobileFloatingControls({
           <button className="mobile-fold-chip" disabled={locked} onClick={() => send({ type: "fold" })}>
             弃牌
           </button>
-        ) : game.legal.canCheck ? (
+        ) : null}
+        {game.legal.canCheck ? (
           <button className="mobile-check-chip" disabled={locked} onClick={() => send({ type: "check" })}>
             过牌
           </button>

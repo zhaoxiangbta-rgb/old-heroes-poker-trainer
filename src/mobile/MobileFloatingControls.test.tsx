@@ -27,7 +27,7 @@ function checkingGame() {
   const game = facingBetGame();
   game.currentBet = 0;
   game.legal = {
-    canFold: false,
+    canFold: true,
     canCheck: true,
     canCall: false,
     canRaise: true,
@@ -77,11 +77,13 @@ describe("MobileFloatingControls", () => {
     expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
   });
 
-  it("uses check as the secondary action when betting is unopened", () => {
-    renderControls(checkingGame());
+  it("keeps both fold and check visible when betting is unopened", () => {
+    const { onAction } = renderControls(checkingGame());
     expect(screen.getByRole("button", { name: "过牌" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "弃牌" })).toBeVisible();
     expect(screen.getByRole("button", { name: "下注 2" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "弃牌" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "弃牌" }));
+    expect(onAction).toHaveBeenCalledWith({ type: "fold" });
   });
 
   it("locks immediately after submission", () => {

@@ -62,6 +62,7 @@ describe("MobilePokerTable", () => {
         screen.getByTestId(`mobile-seat-${player.seat}`).getAttribute("data-emblem"),
       );
     expect(new Set(emblems).size).toBe(emblems.length);
+    expect(document.querySelectorAll(".mobile-player-identity svg[data-avatar-art]")).toHaveLength(game.players.length);
   });
 
   it("shows names, Chinese positions, stacks, wagers, and folded state", () => {
@@ -129,5 +130,34 @@ describe("MobilePokerTable", () => {
     );
     const flight = screen.getByTestId(`mobile-chip-flight-${actorSeat}`);
     expect(flight.querySelectorAll("i")).toHaveLength(3);
+  });
+
+  it("merges a wager action into the wager badge instead of covering the avatar", () => {
+    const game = newGame(42);
+    const opponent = game.players.find((player) => player.seat !== game.heroSeat)!;
+    opponent.streetBet = 8;
+    game.log.push({
+      street: game.street,
+      actorSeat: opponent.seat,
+      actor: opponent.name,
+      kind: "raise",
+      action: "加注到",
+      amount: 8,
+      toAmount: 8,
+      potAfter: game.pot,
+    });
+    render(
+      <MobilePokerTable
+        game={game}
+        phase="hero-turn"
+        frame={undefined}
+        visualTokens={[]}
+        recentActions={[]}
+        themeId="classic-green"
+      />,
+    );
+    const seat = screen.getByTestId(`mobile-seat-${opponent.seat}`);
+    expect(seat.querySelector(".mobile-wager")).toHaveTextContent("加注到 8");
+    expect(seat.querySelector(".mobile-last-action")).not.toBeInTheDocument();
   });
 });

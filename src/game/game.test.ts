@@ -32,6 +32,18 @@ function playChecksToEnd(initial: GameState) {
   return s;
 }
 describe("playable hand loop", () => {
+  it("allows the hero to fold instead of checking when action is unopened", () => {
+    const state = newGame(42);
+    state.currentBet = state.players[state.heroSeat].streetBet;
+    state.legal = {
+      ...state.legal,
+      canFold: true,
+      canCheck: true,
+      canCall: false,
+      callAmount: 0,
+    };
+    expect(applyHeroAction(state, { type: "fold" }).players[state.heroSeat].folded).toBe(true);
+  });
   it("posts blinds, labels all six positions, deals unique cards and waits for hero", () => {
     const s = newGame(42);
     expect(s.players).toHaveLength(6);

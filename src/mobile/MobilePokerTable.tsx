@@ -3,6 +3,7 @@ import type { PokerTableProps } from "../components/PokerTable";
 import { positionLabel } from "../game/game";
 import { isNoActionPlayback } from "../game/playback";
 import { mobileVisualSeat } from "./mobileSeatLayout";
+import { MobilePlayerAvatar } from "./MobilePlayerAvatar";
 
 const PLAYER_EMBLEMS = ["狼", "鲤", "隼", "發", "✥", "♞"] as const;
 
@@ -109,6 +110,9 @@ export function MobilePokerTable({
           );
         const label = positionLabel(player.position);
         const visibleCards = player.hole.slice(0, visibleHoleCount(player.seat));
+        const wagerAction = last && ["call", "bet", "raise", "all-in"].includes(last.kind)
+          ? `${last.action} ${player.streetBet}`
+          : `本街 ${player.streetBet}`;
         return (
           <article
             className={`mobile-seat mobile-seat-${visualSeat}${isHero ? " hero" : ""}${player.folded && phase !== "dealing-hole" ? " folded" : ""}${acting ? " acting" : ""}${thinking ? " thinking" : ""}`}
@@ -120,7 +124,7 @@ export function MobilePokerTable({
             key={player.seat}
           >
             <div className={`mobile-player-identity emblem-${visualSeat}`} aria-hidden="true">
-              {emblem}
+              <MobilePlayerAvatar variant={visualSeat} />
             </div>
             <div className="mobile-player-meta">
               <b>{player.name}</b>
@@ -137,12 +141,12 @@ export function MobilePokerTable({
               ))}
             </div>
             {player.streetBet ? (
-              <span className="mobile-wager">本街 {player.streetBet}</span>
+              <span className="mobile-wager">{wagerAction}</span>
             ) : null}
             {player.folded && phase !== "dealing-hole" ? (
               <span className="mobile-folded">已弃牌</span>
             ) : null}
-            {last && phase !== "dealing-hole" ? (
+            {last && !player.streetBet && !player.folded && phase !== "dealing-hole" ? (
               <span className={`mobile-last-action action-${last.kind}`}>
                 {last.action}
                 {last.toAmount ? ` ${last.toAmount}` : ""}

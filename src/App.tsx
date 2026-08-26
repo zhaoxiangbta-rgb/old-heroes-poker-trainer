@@ -190,7 +190,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
           panelWidth={gameplaySettings.teachingPanelWidth}
           onPanelWidthChange={updateTeachingPanelWidth}
         >
-          <section>
+          <section className={mobile ? `mobile-game-stage${phase === "hero-turn" ? " has-action-dock" : ""}` : undefined}>
             <div className="round">
               <span>
                 第 {game.handNo} 手 · 种子 {game.seed}
