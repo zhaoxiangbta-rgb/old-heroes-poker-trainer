@@ -3,7 +3,7 @@ import type { TableProfileId } from "../policy/tableProfiles";
 import type { PlayerProfile } from "../policy/playerProfiles";
 import type { TableThemeId } from "../ui/tableThemes";
 
-export type RepositoryMode = "native" | "preview";
+export type RepositoryMode = "native" | "preview" | "mobile";
 
 export type ModelSettings = {
   baseUrl: string;
@@ -48,4 +48,9 @@ export interface DesktopRepository {
   hasApiKey(): Promise<boolean>;
   saveApiKey(value: string): Promise<void>;
   testModelConnection(settings: ModelSettings): Promise<ConnectionResult>;
+}
+
+export interface MobileRepository extends DesktopRepository {
+  exportDocument(): Promise<string>;
+  importDocument(json: string): Promise<ImportHandsResult>;
 }

@@ -1,5 +1,6 @@
 mod ai;
 mod keychain;
+mod lan;
 mod storage;
 
 use serde::Serialize;
@@ -9,6 +10,26 @@ use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 
 struct Db(Mutex<rusqlite::Connection>);
+
+#[tauri::command]
+fn get_lan_mobile_status(service: tauri::State<lan::LanService>) -> lan::LanStatus {
+    service.status()
+}
+
+#[tauri::command]
+fn start_lan_mobile(service: tauri::State<lan::LanService>) -> Result<lan::LanStatus, String> {
+    service.start()
+}
+
+#[tauri::command]
+fn stop_lan_mobile(service: tauri::State<lan::LanService>) -> Result<(), String> {
+    service.stop()
+}
+
+#[tauri::command]
+fn rotate_lan_mobile_token(service: tauri::State<lan::LanService>) -> Result<lan::LanStatus, String> {
+    service.rotate()
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -171,6 +192,7 @@ pub fn run() {
             let connection = rusqlite::Connection::open(directory.join("trainer-v1.sqlite3"))?;
             storage::migrate(&connection)?;
             app.manage(Db(Mutex::new(connection)));
+            app.manage(lan::LanService::new(8765));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -186,6 +208,10 @@ pub fn run() {
             test_ai,
             export_hands,
             import_hands
+            ,get_lan_mobile_status
+            ,start_lan_mobile
+            ,stop_lan_mobile
+            ,rotate_lan_mobile_token
         ])
         .run(tauri::generate_context!())
         .expect("应用启动失败")

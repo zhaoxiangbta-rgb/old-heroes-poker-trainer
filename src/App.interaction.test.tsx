@@ -20,6 +20,7 @@ import type { DecisionAssessment } from "./training/types";
 import { isActionCandidate } from "./game/actionDealing";
 import { normalizeGameplaySettings } from "./ui/tableThemes";
 import { DEFAULT_PLAYER_PROFILES } from "./policy/playerProfiles";
+import { APP_VERSION_LABEL } from "./appVersion";
 
 const playbackHooks = vi.hoisted(() => ({
   actualUseGamePlayback: undefined as typeof useGamePlayback | undefined,
@@ -57,6 +58,7 @@ describe("desktop history repository integration", () => {
 
     render(<App repository={repository} />);
     expect(screen.getByText("开发预览 · 数据不持久")).toBeVisible();
+    expect(screen.getByText(APP_VERSION_LABEL)).toBeVisible();
     expect(screen.getByText("本街投入到")).toBeVisible();
     expect(screen.getAllByText("200 筹码").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "历史牌局" }));

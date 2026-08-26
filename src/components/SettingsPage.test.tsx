@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMemoryRepository } from "../data/memoryRepository";
 import { SettingsPage } from "./SettingsPage";
 import { normalizeGameplaySettings } from "../ui/tableThemes";
+import { APP_VERSION_LABEL } from "../appVersion";
 
 describe("SettingsPage", () => {
   afterEach(cleanup);
@@ -16,6 +17,7 @@ describe("SettingsPage", () => {
       <SettingsPage repository={repository} soundEnabled setSoundEnabled={vi.fn()} />,
     );
     expect(screen.getByText("开发预览不保存设置或密钥")).toBeVisible();
+    expect(screen.getByText(`老英雄牌局 ${APP_VERSION_LABEL} · 桌面本地版`)).toBeVisible();
     await waitFor(() => expect(screen.getByLabelText("Base URL")).toHaveValue("http://localhost:8317"));
     expect(screen.getByLabelText("模型名")).toHaveValue("local-model");
     expect(screen.getByLabelText("API Key")).toHaveValue("");

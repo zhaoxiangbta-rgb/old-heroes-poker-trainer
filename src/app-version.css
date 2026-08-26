@@ -1,0 +1,9 @@
+.status { display: flex; align-items: center; gap: 8px; }
+.app-version { padding: 3px 7px; border: 1px solid #5e4b2e; border-radius: 999px; color: #d8b46d; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+.build-info { margin: 28px 0 0; color: #68766f; font-size: 12px; letter-spacing: .03em; }
+
+.mobile-client header .brand { width: auto; }
+.mobile-client header .status-label { display: none; }
+.mobile-client header .status { margin-left: auto; }
+.mobile-client header .status i { display: none; }
+.mobile-client header .app-version { font-size: 9px; padding: 3px 6px; }

@@ -7,6 +7,8 @@ src-tauri/target/
 .superpowers/
 .DS_Store
 *.tsbuildinfo
+test-results/
+playwright-report/
 vite.config.js
 vite.config.d.ts
 release/

@@ -2,6 +2,29 @@
 
 离线 macOS / Windows 德州扑克决策训练应用。所有扑克事实由本地 TypeScript 规则引擎计算；模型连接是可选解释层，失败不影响训练。仅使用虚拟筹码。
 
+## 手机独立离线版（PWA）
+
+固定地址：[https://zhaoxiangbta-rgb.github.io/old-heroes-poker-trainer/](https://zhaoxiangbta-rgb.github.io/old-heroes-poker-trainer/)
+
+### iPhone 独立安装
+
+1. 用 Safari 打开上面的固定 HTTPS 地址。
+2. 等待右上角显示“已可离线使用”。
+3. 点击 Safari 的“分享”，选择“添加到主屏幕”。
+4. 此后从主屏幕打开“老英雄牌局”；电脑关闭或手机断网也可以训练。
+
+### 安卓独立安装
+
+用 Chrome 打开固定地址，等待“已可离线使用”，再从浏览器菜单选择“安装应用”或“添加到主屏幕”。
+
+移动版使用与桌面版相同的本地规则、策略和训练引擎。牌局数据只保存在当前手机浏览器的 IndexedDB，不上传到 GitHub 或其他服务器。清除浏览器网站数据或卸载主屏幕应用前，请先在“历史牌局”导出 JSON 备份。
+
+## 手机局域网版（v1.1，保留）
+
+桌面安装版仍可在“设置 → 手机访问”中开启临时本地服务。iPhone 或 Android 与电脑连接同一 Wi-Fi 后扫码进入；该方式适合开发测试，不支持安装后独立启动。
+
+连接、备份和防火墙说明见 [`docs/mobile-lan.md`](docs/mobile-lan.md)。
+
 欢迎通过 GitHub Issue 反馈规则错误、交互问题与功能建议，也欢迎提交 Pull Request。贡献方法见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 开发验证
@@ -10,6 +33,8 @@
 npm install
 npm test
 npm run build
+npm run verify:mobile-bundle
+npm run test:pwa
 npm run tauri dev
 ```
 

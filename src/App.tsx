@@ -28,7 +28,9 @@ import { TABLE_PROFILES } from "./policy/tableProfiles";
 import { summarizeWeaknesses } from "./training/curriculum";
 import { newTargetedGame } from "./training/targetedScenario";
 import { WEAKNESS_DEFINITIONS, type TrainingTarget, type WeaknessTag } from "./training/types";
+import { APP_VERSION_LABEL } from "./appVersion";
 import "./training.css";
+import "./app-version.css";
 const nav = ["继续训练", "专项训练", "弱点报告", "历史牌局", "设置"] as const;
 type Page = (typeof nav)[number];
 const SUIT_SYMBOL: Record<string, string> = {
@@ -54,10 +56,18 @@ function renderShowdownCard(card: string, key: string) {
     </span>
   );
 }
-export default function App({ repository: suppliedRepository }: { repository?: DesktopRepository } = {}) {
+function readSoundPreference() {
+  try { return localStorage.getItem("poker-sound") !== "off"; }
+  catch { return true; }
+}
+function saveSoundPreference(enabled: boolean) {
+  try { localStorage.setItem("poker-sound", enabled ? "on" : "off"); }
+  catch { /* Safari can block storage; retain the in-memory preference. */ }
+}
+export default function App({ repository: suppliedRepository, mobile = false }: { repository?: DesktopRepository; mobile?: boolean } = {}) {
   const [page, setPage] = useState<Page>("继续训练"),
     [initialGame] = useState(() => newActionGame(Date.now() >>> 0)),
-    [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem("poker-sound") !== "off"),
+    [soundEnabled, setSoundEnabled] = useState(readSoundPreference),
     [repository] = useState(() => suppliedRepository ?? createRepository()),
     [history, setHistory] = useState<GameState[]>([]),
     [historyLoading, setHistoryLoading] = useState(true),
@@ -66,13 +76,13 @@ export default function App({ repository: suppliedRepository }: { repository?: D
   const savedHands = useRef(new Set<string>());
   const sound = useRef(createSoundPlayer({ enabled: soundEnabled }));
   const { game, phase, frame, receipt, busy, visualTokens, recentActions, submit: playAction, replaceGame } =
-    useGamePlayback(initialGame, { animateInitialDeal: true });
+    useGamePlayback(initialGame, { animateInitialDeal: !mobile });
   const showdownPlayback = phase === "showdown";
   const noActionPlayback = isNoActionPlayback(phase);
   const handComplete = game.phase === "review" && phase === "hand-complete";
   const facts = useDeferredDecisionFacts(game, phase === "hero-turn");
   const weaknessSummaries = useMemo(() => summarizeWeaknesses(history), [history]);
-  useEffect(() => { sound.current.setEnabled(soundEnabled); localStorage.setItem("poker-sound", soundEnabled ? "on" : "off"); }, [soundEnabled]);
+  useEffect(() => { sound.current.setEnabled(soundEnabled); saveSoundPreference(soundEnabled); }, [soundEnabled]);
   useEffect(() => () => sound.current.dispose(), []);
   useEffect(() => {
     let active = true;
@@ -171,7 +181,7 @@ export default function App({ repository: suppliedRepository }: { repository?: D
   };
   return (
     <main>
-      <Header page={page} setPage={setPage} mode={repository.mode} />
+      <Header page={page} setPage={setPage} mode={repository.mode} mobile={mobile} />
       {storageNotice ? <div className="storage-notice" role="status">{storageNotice}</div> : null}
       {page === "继续训练" ? (
         <ResizableWorkspace
@@ -253,7 +263,7 @@ export default function App({ repository: suppliedRepository }: { repository?: D
       ) : page === "弱点报告" ? (
         <WeaknessReportPage summaries={weaknessSummaries} hands={history} onTrain={startSpecialty} onOpenHand={(hand) => { replaceGame(hand); setPage("继续训练"); }} />
       ) : page === "设置" ? (
-        <SettingsPage repository={repository} soundEnabled={soundEnabled} currentHandProfileId={game.tableProfileId} onGameplaySettingsChange={setGameplaySettings} setSoundEnabled={setSoundEnabled} />
+        <SettingsPage repository={repository} soundEnabled={soundEnabled} currentHandProfileId={game.tableProfileId} onGameplaySettingsChange={setGameplaySettings} setSoundEnabled={setSoundEnabled} hideModel={mobile} />
       ) : null}
       <footer>
         规则引擎 v0.2 · 本地事实优先 <span>虚拟筹码 · 不涉及真钱</span>
@@ -267,7 +277,7 @@ export function SessionLedger({ players }: { players: Player[] }) {
     return <div className="ledger-row" data-testid={`ledger-player-${player.seat}`} key={player.name}><b>{player.name}</b><span>当前 {player.stack}</span><span>买入 {player.buyIn}</span><span>补码 {player.rebuys}</span><strong className={profit > 0 ? "profit-win" : profit < 0 ? "profit-loss" : ""}>盈亏 {profit > 0 ? "+" : ""}{profit}</strong></div>;
   })}</div>;
 }
-function Header({ page, setPage, mode }: { page: Page; setPage: (p: Page) => void; mode: DesktopRepository["mode"] }) {
+function Header({ page, setPage, mode, mobile = false }: { page: Page; setPage: (p: Page) => void; mode: DesktopRepository["mode"]; mobile?: boolean }) {
   return (
     <header>
       <div className="brand">
@@ -277,7 +287,7 @@ function Header({ page, setPage, mode }: { page: Page; setPage: (p: Page) => voi
           <small>OLD HEROES POKER</small>
         </div>
       </div>
-      <nav>
+      <nav aria-label={mobile ? "移动导航" : "主导航"}>
         {nav.map((n) => (
           <button
             className={page === n ? "active" : ""}
@@ -290,7 +300,8 @@ function Header({ page, setPage, mode }: { page: Page; setPage: (p: Page) => voi
       </nav>
       <div className="status">
         <i />
-        {mode === "native" ? "桌面本地数据" : "开发预览 · 数据不持久"}
+        <span className="status-label">{mode === "native" ? "桌面本地数据" : mode === "mobile" ? "手机本地保存" : "开发预览 · 数据不持久"}</span>
+        <span className="app-version">{APP_VERSION_LABEL}</span>
       </div>
     </header>
   );

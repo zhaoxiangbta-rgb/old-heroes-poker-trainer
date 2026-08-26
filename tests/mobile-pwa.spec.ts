@@ -1,0 +1,23 @@
+import { expect, test } from "@playwright/test";
+
+test("mobile app restarts from its cache while offline", async ({ page, context }) => {
+  await page.goto("/");
+  await expect(page.getByRole("navigation", { name: "移动导航" })).toBeVisible();
+  await expect(page.getByText("已可离线使用")).toBeVisible({ timeout: 15_000 });
+  await page.evaluate(() => navigator.serviceWorker.ready);
+
+  await context.setOffline(true);
+  await page.evaluate(() => location.reload());
+
+  await expect(page.getByRole("navigation", { name: "移动导航" })).toBeVisible();
+  await expect(page.getByText("当前离线运行")).toBeVisible({ timeout: 10_000 });
+});
+
+test("manifest and service worker are scoped to the published subdirectory", async ({ request }) => {
+  const manifest = await request.get("/manifest.webmanifest");
+  expect(manifest.ok()).toBeTruthy();
+  expect(await manifest.json()).toMatchObject({ start_url: "./", scope: "./", display: "standalone" });
+  const worker = await request.get("/service-worker.js");
+  expect(worker.ok()).toBeTruthy();
+  expect(await worker.text()).toContain("old-heroes-pwa-");
+});

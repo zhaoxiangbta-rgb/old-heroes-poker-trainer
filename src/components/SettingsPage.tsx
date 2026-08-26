@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DesktopRepository } from "../data/repository";
 import type { GameplaySettings, ModelSettings } from "../data/types";
 import { TABLE_PROFILES, type TableProfileId } from "../policy/tableProfiles";
 import { normalizeGameplaySettings, type TableThemeId } from "../ui/tableThemes";
 import { TableThemePicker } from "./TableThemePicker";
 import { PlayerProfileSettings } from "./PlayerProfileSettings";
+import { LanMobileAccess } from "./LanMobileAccess";
+import { createNativeLanService } from "../lan/nativeLanService";
+import { APP_VERSION_LABEL } from "../appVersion";
 
 export function SettingsPage({
   repository,
@@ -12,12 +15,14 @@ export function SettingsPage({
   currentHandProfileId = "balanced",
   onGameplaySettingsChange,
   setSoundEnabled,
+  hideModel = false,
 }: {
   repository: DesktopRepository;
   soundEnabled: boolean;
   currentHandProfileId?: TableProfileId;
   onGameplaySettingsChange?: (settings: GameplaySettings) => void;
   setSoundEnabled: (enabled: boolean) => void;
+  hideModel?: boolean;
 }) {
   const [settings, setSettings] = useState<ModelSettings>({ baseUrl: "", model: "" });
   const [gameplay, setGameplay] = useState<GameplaySettings>(() => normalizeGameplaySettings({}));
@@ -26,6 +31,7 @@ export function SettingsPage({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"idle" | "settings" | "gameplay" | "key" | "connection">("idle");
   const [notice, setNotice] = useState("");
+  const lanClient = useMemo(() => repository.mode === "native" ? createNativeLanService() : undefined, [repository]);
 
   useEffect(() => {
     let active = true;
@@ -165,8 +171,10 @@ export function SettingsPage({
         }}
       />
 
+      <LanMobileAccess client={lanClient} />
+
       <div className="settings-grid">
-        <section className="panel settings-card">
+        {!hideModel ? <section className="panel settings-card">
           <div className="settings-card-head">
             <div><b>OpenAI-compatible 模型</b><small>只用于中文解释；不会改变本地规则结论。</small></div>
             <span className={hasKey ? "key-saved" : "key-missing"}>密钥状态：{hasKey ? "已保存" : "未配置"}</span>
@@ -179,7 +187,7 @@ export function SettingsPage({
           </div>
           <label>API Key<input aria-label="API Key" autoComplete="new-password" disabled={disabled} type="password" value={apiKey} placeholder="保存后立即清空，不回显" onChange={(event) => setApiKey(event.target.value)} /></label>
           <button className="save-key" disabled={disabled} onClick={() => void saveKey()}>{busy === "key" ? "正在写入凭据库…" : "保存 API Key"}</button>
-        </section>
+        </section> : null}
 
         <section className="panel settings-card compact">
           <div className="setting-row"><div><b>牌桌音效</b><small>下注、发牌与全下使用本机合成音。</small></div><button className={soundEnabled ? "toggle active" : "toggle"} aria-pressed={soundEnabled} onClick={() => setSoundEnabled(!soundEnabled)}>{soundEnabled ? "开启" : "关闭"}</button></div>
@@ -187,6 +195,7 @@ export function SettingsPage({
         </section>
       </div>
       {notice ? <p className="settings-notice" role="status">{notice}</p> : null}
+      <p className="build-info">老英雄牌局 {APP_VERSION_LABEL} · {hideModel ? "手机本地版" : "桌面本地版"}</p>
     </div>
   );
 }

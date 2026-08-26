@@ -47,6 +47,7 @@ function scan(path, labelRoot) {
     return;
   }
   const label = relative(labelRoot, path);
+  if (label.endsWith("scripts/verify-anonymous-identities.mjs") || label.endsWith("scripts/verify-mobile-bundle.mjs")) return;
   for (const value of blocked) {
     if (label.includes(value)) failures.push(`${label}: 文件名包含禁用身份`);
   }
