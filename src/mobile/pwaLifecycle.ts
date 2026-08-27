@@ -62,10 +62,15 @@ export function createPwaLifecycle(environment: PwaLifecycleEnvironment): PwaLif
     current = { ...current, ...next };
     listeners.forEach((listener) => listener(current));
   };
+  const activateWaitingUpdate = () => {
+    if (!registration?.waiting) return;
+    emit({ status: "update-ready" });
+    registration.waiting.postMessage({ type: "PWA_ACTIVATE_UPDATE" });
+  };
   const observeInstallingWorker = (worker: WorkerLike | null) => {
     const stateful = worker as WorkerLike & { addEventListener?: (type: string, listener: EventListener) => void; state?: string };
     stateful?.addEventListener?.("statechange", (() => {
-      if (stateful.state === "installed" && registration?.waiting) emit({ status: "update-ready" });
+      if (stateful.state === "installed") activateWaitingUpdate();
     }) as EventListener);
   };
 
@@ -98,7 +103,7 @@ export function createPwaLifecycle(environment: PwaLifecycleEnvironment): PwaLif
         registration = await environment.serviceWorker.register(workerUrl, { scope: "./" });
         environment.serviceWorker.controller?.postMessage({ type: "PWA_QUERY_STATUS" });
         registration.addEventListener("updatefound", (() => observeInstallingWorker(registration?.installing ?? null)) as EventListener);
-        if (registration.waiting) emit({ status: "update-ready" });
+        if (registration.waiting) activateWaitingUpdate();
         else observeInstallingWorker(registration.installing);
       } catch (error) {
         emit({ status: "error", message: error instanceof Error ? error.message : "离线准备失败" });

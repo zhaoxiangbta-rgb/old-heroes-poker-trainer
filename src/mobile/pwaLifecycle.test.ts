@@ -51,7 +51,7 @@ describe("PWA lifecycle", () => {
     expect(lifecycle.snapshot().cacheVersion).toBe("1.1.7");
   });
 
-  it("keeps the current page until activateUpdate is called", async () => {
+  it("automatically activates an update that is already waiting", async () => {
     const harness = serviceWorkerHarness();
     harness.registration.waiting = harness.waiting;
     const reload = vi.fn();
@@ -64,9 +64,6 @@ describe("PWA lifecycle", () => {
 
     await lifecycle.register();
     expect(lifecycle.snapshot().status).toBe("update-ready");
-    expect(harness.waiting.postMessage).not.toHaveBeenCalled();
-
-    await lifecycle.activateUpdate();
     expect(harness.waiting.postMessage).toHaveBeenCalledWith({ type: "PWA_ACTIVATE_UPDATE" });
     harness.controllerChanged();
     expect(reload).toHaveBeenCalledOnce();
