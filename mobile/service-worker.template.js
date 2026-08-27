@@ -13,7 +13,7 @@ self.addEventListener("install",(event)=>{
     try {
       const cache=await caches.open(CACHE_NAME);
       await cache.addAll(PRECACHE);
-      if(!self.registration.active) await self.skipWaiting();
+      await self.skipWaiting();
     } catch(error) {
       await notifyClients({type:"PWA_CACHE_ERROR",message:String(error)});
       throw error;

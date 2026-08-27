@@ -30,6 +30,8 @@ test("generates a versioned worker whose precache entries exist", async () => {
   assert.match(worker, /PWA_CACHE_READY/);
   assert.match(worker, /PWA_QUERY_STATUS/);
   assert.match(worker, /PWA_ACTIVATE_UPDATE/);
+  assert.match(worker, /await self\.skipWaiting\(\)/);
+  assert.doesNotMatch(worker, /if\(!self\.registration\.active\)/);
   assert.match(await readFile(join(distDir, "index.html"), "utf8"), /\.\/assets\/analysis\.worker-ABC\.js/);
   await access(join(distDir, "assets", "analysis.worker-ABC.js"));
   const match = worker.match(/const PRECACHE=(\[[^;]+\]);/);
