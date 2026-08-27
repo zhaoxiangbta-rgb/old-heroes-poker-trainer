@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { newGame, type GameState } from "../game/game";
 import { MobileFloatingControls } from "./MobileFloatingControls";
@@ -60,7 +60,7 @@ describe("MobileFloatingControls", () => {
     const { onAction } = renderControls(game);
     const slider = screen.getByRole("slider");
     expect(screen.getByRole("button", { name: "跟注 6" })).toBeVisible();
-    fireEvent.change(slider, { target: { value: "1" } });
+    fireEvent.change(slider, { target: { value: "21" } });
     expect(screen.getByRole("button", { name: "加注到 14" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "加注到 14" }));
     expect(onAction).toHaveBeenCalledWith({ type: "raise", to: 14 });
@@ -68,24 +68,26 @@ describe("MobileFloatingControls", () => {
 
   it("integrates sizing landmarks into the rail without submitting", () => {
     const { onAction } = renderControls(facingBetGame());
-    expect(screen.getByText("最低")).toBeVisible();
-    expect(screen.getByText("½")).toBeVisible();
-    expect(screen.getByText("⅔")).toBeVisible();
-    expect(screen.getByText("1×")).toBeVisible();
-    expect(screen.getByText("ALL IN")).toBeVisible();
+    const rail = screen.getByLabelText("下注吸附档位");
+    expect(within(rail).getByText("最低")).toBeVisible();
+    expect(within(rail).getByText("半池")).toBeVisible();
+    expect(within(rail).getByText("2/3池")).toBeVisible();
+    expect(within(rail).getByText("底池")).toBeVisible();
+    expect(within(rail).getByText("ALL IN")).toBeVisible();
     expect(document.querySelector(".mobile-floating-presets")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole("slider"), { target: { value: "8" } });
+    fireEvent.change(screen.getByRole("slider"), { target: { value: "167" } });
     expect(onAction).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
   });
 
-  it("keeps both fold and check visible when betting is unopened", () => {
+  it("keeps three stable action slots and disables unavailable actions", () => {
     const { onAction } = renderControls(checkingGame());
+    expect(document.querySelectorAll(".mobile-action-zone button")).toHaveLength(3);
     expect(screen.getByRole("button", { name: "过牌" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "弃牌" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "弃牌" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "下注 2" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "弃牌" }));
-    expect(onAction).toHaveBeenCalledWith({ type: "fold" });
+    fireEvent.click(screen.getByRole("button", { name: "过牌" }));
+    expect(onAction).toHaveBeenCalledWith({ type: "check" });
   });
 
   it("locks immediately after submission", () => {
@@ -102,14 +104,27 @@ describe("MobileFloatingControls", () => {
     expect(screen.getByRole("region", { name: "行动选择" })).toHaveClass("mobile-casino-dock");
     expect(screen.getByRole("button", { name: "弃牌" })).toHaveClass("mobile-chip-control", "chip-fold");
     expect(screen.getByRole("button", { name: "跟注 6" })).toHaveClass("mobile-chip-control", "chip-primary");
+    expect(screen.getByRole("button", { name: "弃牌" })).toHaveStyle({
+      "--control-chip-image": "url(/assets/poker-visuals/controls/fold.png)",
+    });
+    expect(screen.getByRole("button", { name: "跟注 6" })).toHaveStyle({
+      "--control-chip-image": "url(/assets/poker-visuals/controls/primary.png)",
+    });
   });
 
-  it("uses bankroll, centered cards, and legal actions as three columns", () => {
-    renderControls(facingBetGame());
-    expect(screen.getByRole("group", { name: "你的筹码信息" })).toHaveTextContent("余码");
-    expect(screen.getByRole("group", { name: "你的筹码信息" })).toHaveTextContent("你 ·");
-    expect(document.querySelectorAll(".mobile-centered-hole .card")).toHaveLength(2);
-    expect(document.querySelector(".mobile-right-actions")).toContainElement(screen.getByRole("button", { name: "弃牌" }));
+  it("uses size, cards, and fixed actions as three zones", () => {
+    const { onAction } = renderControls(facingBetGame());
+    const sizeZone = document.querySelector(".mobile-size-zone")!;
+    expect(within(sizeZone as HTMLElement).getAllByRole("button")).toHaveLength(3);
+    expect(sizeZone).toHaveTextContent("余码 200 ·");
+    expect(document.querySelectorAll(".mobile-hand-zone .card")).toHaveLength(2);
+    expect(document.querySelector(".mobile-hand-zone")).not.toHaveTextContent("余码");
+    expect(document.querySelectorAll(".mobile-action-zone button")).toHaveLength(3);
+    expect(document.querySelector(".mobile-action-zone")).toContainElement(screen.getByRole("button", { name: "弃牌" }));
+    expect(screen.getByRole("button", { name: "过牌" })).toBeDisabled();
+    fireEvent.click(within(sizeZone as HTMLElement).getByRole("button", { name: "半池" }));
+    expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
+    expect(onAction).not.toHaveBeenCalled();
     expect(screen.getByTestId("mobile-horizontal-bet-rail")).toBeInTheDocument();
   });
 });

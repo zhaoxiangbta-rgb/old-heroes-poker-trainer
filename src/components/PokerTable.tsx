@@ -1,4 +1,4 @@
-import { currentPrompt, positionLabel, type GameLog, type GameState } from "../game/game";
+import { currentPrompt, type GameLog, type GameState } from "../game/game";
 import {
   isNoActionPlayback,
   type PlaybackFrame,
@@ -7,6 +7,9 @@ import {
 import type { VisualToken } from "../game/useGamePlayback";
 import type { TableThemeId } from "../ui/tableThemes";
 import { PlayingCard } from "./PlayingCard";
+import { PlayerSeat } from "./PlayerSeat";
+import { PotChipStack } from "./PotChipStack";
+import { TableActionEffects } from "./TableActionEffects";
 
 export type PokerTableProps = {
   game: GameState;
@@ -58,32 +61,19 @@ export function PokerTable({ game, phase, frame, visualTokens, recentActions, th
   return <div className="table-shell">
     <div className="table">
       <div className="felt" data-phase={phase} data-actor-seat={visibleActor} data-table-theme={themeId}>
-        <div className="pot">底池 <b>{game.pot}</b><small>{showdownPlayback ? "亮牌中" : game.phase === "playing" && !noActionPlayback ? `SPR ${(game.players[game.heroSeat].stack / Math.max(1, game.pot)).toFixed(1)}` : game.phase === "review" ? "本手结束" : null}</small></div>
+        <PotChipStack pot={game.pot} phase={phase} />
+        <TableActionEffects tokens={visualTokens} />
         <div className="action-banner"><strong>{status}</strong>{game.phase === "playing" && !noActionPlayback && <span>最高下注 {prompt.currentBet} · 需跟注 {prompt.toCall}</span>}</div>
         <div className="deal-deck" aria-hidden="true">♠</div>
         {holeDeal ? <div className={`flying-card target-seat-${holeDeal.seat}`} key={frame?.id} aria-hidden="true">♠</div> : null}
         <div className="board">{visibleBoard.map((card) => <PlayingCard card={card} key={card} />)}{Array.from({ length: 5 - visibleBoard.length }, (_, index) => <span className="empty-card" key={index} />)}</div>
         {game.players.map((player, seat) => {
-          const label = positionLabel(player.position);
           const last = [...game.log].reverse().find((entry) => entry.actorSeat === seat && (entry.street === game.street || player.folded));
           const token = [...visualTokens].reverse().find((item) => item.actorSeat === seat);
           const thinking = phase === "bot-thinking" && visibleActor === seat;
           const receiving = phase === "dealing-hole" && holeDeal?.seat === seat;
           const acting = phase !== "dealing-hole" && game.phase === "playing" && visibleActor === seat;
-          const effectClass = token ? `effect-${token.effect}` : "";
-          return <div className={`seat seat${seat}${seat === game.heroSeat ? " hero" : ""}${player.folded && phase !== "dealing-hole" ? " folded" : ""}${acting ? " acting" : ""}${thinking ? " thinking" : ""}${receiving ? " receiving" : ""} ${effectClass}`} key={seat}>
-            {acting && <span className="turn-badge">{thinking ? <><i /><i /><i /> 正在思考</> : `▶ ${seat === game.heroSeat ? "轮到你" : "行动中"}`}</span>}
-            <b className="player-name">{player.name}</b>
-            <span className="position-name">{label.name} <small>{label.abbreviation}</small></span>
-            <small className="stack">{player.allIn ? "全下" : `${player.stack} 筹码`}</small>
-            {player.folded && phase !== "dealing-hole" && <span className="fold-badge">已弃牌</span>}
-            <div className="hole">{player.hole.slice(0, visibleHoleCount(seat)).map((card, index) => <PlayingCard card={player.revealed ? card : undefined} back={!player.revealed} key={index} />)}</div>
-            <div className={`wager-zone${player.streetBet ? " committed" : ""}`}>
-              <span className="chip-stack" aria-hidden="true"><i /><i /><i /></span>
-              <b>{player.streetBet}</b><small>本街</small>
-            </div>
-            {last && phase !== "dealing-hole" && <div className={`last-action action-${last.kind}`}>{last.action}{last.toAmount ? ` ${last.toAmount}` : ""}</div>}
-          </div>;
+          return <PlayerSeat key={seat} player={player} seat={seat} heroSeat={game.heroSeat} visibleHoleCount={visibleHoleCount(seat)} phase={phase} acting={acting} thinking={thinking} receiving={receiving} last={last} effect={token?.effect} />;
         })}
         {allIn && <div className="all-in-overlay" data-testid="all-in-overlay"><strong>ALL IN</strong><span>全下 · {allIn.action?.toAmount}</span></div>}
       </div>

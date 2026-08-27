@@ -62,7 +62,12 @@ export async function buildPwaAssets({
     join(distDir, "assets", "mobile-casino"),
     "./assets/mobile-casino",
   );
-  const precache = ["./index.html", ...assetNames.map((name) => `./${name}`), ...iconNames.map((name) => `./${name}`), ...referencedAssets.map((name) => `./assets/${name}`), ...casinoAssets];
+  const pokerVisualAssets = await copyTree(
+    join(publicDir, "assets", "poker-visuals"),
+    join(distDir, "assets", "poker-visuals"),
+    "./assets/poker-visuals",
+  );
+  const precache = ["./index.html", ...assetNames.map((name) => `./${name}`), ...iconNames.map((name) => `./${name}`), ...referencedAssets.map((name) => `./assets/${name}`), ...casinoAssets, ...pokerVisualAssets];
   const hash = createHash("sha256");
   for (const url of precache) hash.update(await readFile(join(distDir, url.slice(2))));
   const cacheName = `old-heroes-pwa-${version}-${hash.digest("hex").slice(0, 12)}`;

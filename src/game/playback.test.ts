@@ -150,7 +150,7 @@ describe("poker action playback planning", () => {
         frame.effect !== "all-in",
     );
 
-    expect(Math.max(...routine.map((frame) => frame.durationMs))).toBeLessThanOrEqual(120);
+    expect(Math.max(...routine.map((frame) => frame.durationMs))).toBeLessThanOrEqual(420);
   });
 
   it("reveals the flop one visible board card at a time", () => {
@@ -276,23 +276,24 @@ describe("poker action playback planning", () => {
 
   it("uses deterministic standard timings", () => {
     expect(durationFor(42, 3, "submitting", false)).toBe(20);
-    expect(durationFor(42, 3, "bot-thinking", false)).toBeGreaterThanOrEqual(70);
-    expect(durationFor(42, 3, "bot-thinking", false)).toBeLessThanOrEqual(110);
+    expect(durationFor(42, 3, "bot-thinking", false)).toBeGreaterThanOrEqual(180);
+    expect(durationFor(42, 3, "bot-thinking", false)).toBeLessThanOrEqual(280);
     expect(durationFor(42, 3, "bot-thinking", false)).toBe(
       durationFor(42, 3, "bot-thinking", false),
     );
-    expect(durationFor(42, 3, "animating-chips", false)).toBeGreaterThanOrEqual(70);
-    expect(durationFor(42, 3, "animating-chips", false)).toBeLessThanOrEqual(100);
-    expect(durationFor(42, 3, "settling-pot", false)).toBe(70);
+    expect(durationFor(42, 3, "animating-chips", false)).toBeGreaterThanOrEqual(320);
+    expect(durationFor(42, 3, "animating-chips", false)).toBeLessThanOrEqual(420);
+    expect(durationFor(42, 3, "settling-pot", false)).toBe(90);
+    expect(durationFor(42, 3, "animating-chips", true)).toBe(120);
     expect(durationFor(42, 3, "dealing", false)).toBe(90);
   });
 
   it.each([
-    ["check", 45, 70],
-    ["fold", 45, 70],
-    ["call", 55, 85],
-    ["bet", 70, 110],
-    ["raise", 70, 110],
+    ["check", 180, 220],
+    ["fold", 180, 220],
+    ["call", 200, 250],
+    ["bet", 230, 280],
+    ["raise", 230, 280],
   ] as const)(
     "paces %s thinking between %d and %d ms",
     (kind, minimum, maximum) => {
@@ -340,8 +341,8 @@ describe("poker action playback planning", () => {
     expect(reduced.map((frame) => frame.phase)).toEqual(
       normal.map((frame) => frame.phase),
     );
-    expect(Math.max(...reduced.map((frame) => frame.durationMs))).toBeLessThan(
-      100,
+    expect(Math.max(...reduced.map((frame) => frame.durationMs))).toBeLessThanOrEqual(
+      120,
     );
   });
 });

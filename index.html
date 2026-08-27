@@ -1,1 +1,9 @@
-<title>老英雄牌局</title><div id="root"></div><script type="module" src="/src/main.tsx"></script>
+<title>老英雄牌局</title>
+<script data-mobile-entry-redirect>
+  (() => {
+    const handheld = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (handheld) window.location.replace(new URL("./mobile/", window.location.href));
+  })();
+</script>
+<div id="root"></div><script type="module" src="/src/main.tsx"></script>

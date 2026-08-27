@@ -139,3 +139,556 @@
 }
 .card-rank{font:900 1em/.88 Georgia,"Times New Roman",serif}
 .suit-symbol{font-size:.78em;line-height:1}
+
+/* Unified desktop three-zone action dock. */
+.desktop-action-dock {
+  min-height: 174px;
+  padding: 7px 18px 8px;
+  border-top: 1px solid #80612f;
+  background:
+    radial-gradient(circle at 50% -60%, rgba(181, 137, 63, .12), transparent 58%),
+    linear-gradient(180deg, #101411 0%, #080b09 100%);
+  box-shadow: inset 0 1px rgba(244, 207, 137, .08), 0 -12px 30px rgba(0, 0, 0, .28);
+}
+
+.desktop-action-dock .legal-summary {
+  height: 17px;
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.desktop-amount-rail {
+  display: grid;
+  grid-template-columns: 126px minmax(360px, 720px);
+  justify-content: center;
+  align-items: start;
+  gap: 17px;
+  height: 52px;
+  margin-top: 2px;
+}
+
+.desktop-exact-amount {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  color: #a99d87;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.desktop-exact-amount input {
+  width: 72px;
+  height: 32px;
+  padding: 0 5px;
+  border: 1px solid #6e552b;
+  border-radius: 16px;
+  background: #171916;
+  color: #f1d18e;
+  font-size: 15px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.desktop-rail-track {
+  position: relative;
+  height: 51px;
+  padding: 0 22px;
+}
+
+.desktop-rail-track input[type="range"] {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 27px;
+  margin: 2px 0 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.desktop-rail-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 1px solid #70582f;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #37352e, #141714 68%);
+  box-shadow: inset 0 2px 3px #000, 0 1px rgba(255,255,255,.06);
+}
+
+.desktop-rail-track input[type="range"]::-webkit-slider-thumb {
+  width: 25px;
+  height: 25px;
+  margin-top: -9px;
+  appearance: none;
+  border: 2px solid #f1cd81;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff0bf 0 12%, #c79645 18% 42%, #6d4617 75%);
+  box-shadow: 0 0 0 4px #11140f, 0 3px 8px #000, 0 0 13px rgba(213, 165, 76, .32);
+}
+
+.desktop-rail-track input[type="range"]:disabled { opacity: .46; cursor: not-allowed; }
+
+.desktop-rail-nodes {
+  position: absolute;
+  inset: 25px 22px auto;
+  height: 22px;
+  pointer-events: none;
+}
+
+.desktop-rail-nodes span {
+  position: absolute;
+  left: var(--node-left);
+  transform: translateX(-50%);
+  color: #928873;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.desktop-rail-nodes span::before {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 4px;
+  margin: -4px auto 2px;
+  border-radius: 50%;
+  background: #ac8750;
+}
+
+.desktop-rail-nodes .all-in-node {
+  color: #f0c763;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: .3px;
+}
+
+.desktop-action-zones {
+  position:relative;
+  display:block;
+  width: min(100%, 960px);
+  height: 78px;
+  margin: 0 auto;
+}
+
+.desktop-size-zone {
+  position:absolute;
+  left:0;
+  top:0;
+  width:34%;
+  height:78px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+}
+
+.desktop-size-buttons,
+.desktop-action-zone {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.desktop-size-buttons button,
+.desktop-action-chip {
+  min-width: 0;
+  height: 56px;
+  padding: 0 10px;
+  border: 1px solid #5d513b;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #272924, #141713);
+  color: #e2d5bd;
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 3px 8px rgba(0,0,0,.35);
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.desktop-size-buttons button:not(:disabled):hover,
+.desktop-action-chip:not(:disabled):hover {
+  border-color: #b48a46;
+  color: #ffdda0;
+  transform: translateY(-1px);
+}
+
+.desktop-size-zone small {
+  padding-left: 13px;
+  color: #9d927e;
+  font-size: 11px;
+  letter-spacing: .2px;
+}
+
+.desktop-hand-zone {
+  position:absolute;
+  left:50%;
+  top:0;
+  width:132px;
+  transform:translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  height: 78px;
+}
+
+.desktop-hand-zone .card {
+  width: 58px;
+  height: 78px;
+  margin: 0;
+  padding: 7px;
+  border-radius: 7px;
+  font-size: 27px;
+  box-shadow: 0 5px 10px rgba(0,0,0,.42);
+}
+
+.desktop-hand-zone .card small { font-size: 23px; }
+
+.desktop-action-zone {
+  position:absolute;
+  right:0;
+  top:11px;
+  width:36%;
+  align-items: center;
+}
+
+.desktop-action-chip.fold-action:not(:disabled) {
+  border-color: #805247;
+  background: linear-gradient(180deg, #35201d, #1e1211);
+  color: #e7b4a9;
+}
+
+.desktop-action-chip.check-action:not(:disabled) {
+  border-color: #6b6555;
+  background: linear-gradient(180deg, #302f29, #191a17);
+}
+
+.desktop-action-chip.primary-action:not(:disabled) {
+  border-color: #b78d45;
+  background: linear-gradient(180deg, #765421, #3c290e);
+  color: #ffe3a2;
+  box-shadow: inset 0 1px rgba(255,236,184,.16), 0 0 14px rgba(192,139,50,.16);
+}
+
+.desktop-action-chip.all-in-action {
+  color: #ffe894;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: .4px;
+  text-shadow: 0 1px #5b3200, 0 0 8px rgba(255,210,84,.42);
+}
+
+.desktop-action-chip:disabled,
+.desktop-size-buttons button:disabled {
+  visibility: visible;
+  opacity: .28;
+  cursor: not-allowed;
+  filter: saturate(.45);
+}
+
+.desktop-action-dock .submit-receipt {
+  position: absolute;
+  right: 18px;
+  bottom: 1px;
+  min-height: 14px;
+  margin: 0;
+  font-size: 10px;
+}
+
+.desktop-action-dock > .error {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: 10px;
+}
+
+@media (max-width: 1160px) {
+  .desktop-action-dock { padding-inline: 10px; }
+  .desktop-amount-rail { grid-template-columns: 112px minmax(310px, 580px); }
+  .desktop-action-zones { width:100%; }
+  .desktop-size-zone{width:35%}.desktop-action-zone{width:37%}
+  .desktop-size-buttons button, .desktop-action-chip { padding-inline: 6px; font-size: 13px; }
+  .desktop-hand-zone .card { width: 54px; height: 74px; }
+}
+
+@media (max-height: 800px) and (min-width: 769px) {
+  .felt { height: 408px; }
+  .table { padding-bottom: 82px; }
+  .desktop-action-dock { min-height: 165px; }
+}
+
+/* Image 2 unified card, seat, and control treatment. */
+.desktop-game-stage{overflow:hidden;background:#070c09}
+.desktop-game-stage .table-shell,.desktop-game-stage .desktop-action-dock,.desktop-game-stage>.next{width:min(100%,1090px);margin-inline:auto}
+.desktop-game-stage .table{padding-inline:clamp(16px,2.6vw,28px)}
+.desktop-game-stage .felt{width:min(100%,820px);height:auto;aspect-ratio:820/460}
+.pot-chip-stack{position:absolute;z-index:5;left:50%;top:64%;width:240px;transform:translateX(-50%);display:grid;justify-items:center;gap:4px;pointer-events:none}
+.pot-chip-label{min-width:104px;padding:5px 13px;border:1px solid #9a763b;border-radius:9px;background:#0a110de8;color:#efcf8a;font-size:16px;text-align:center;box-shadow:0 4px 12px #0008}
+.pot-chip-pile{width:min(220px,100%);height:82px;display:flex;align-items:flex-end;justify-content:center;margin-top:-1px;isolation:isolate}
+.pot-chip-column{position:relative;width:34px;height:82px;flex:0 0 34px}
+.pot-chip-column:nth-child(even){transform:translateY(2px)}
+.pot-chip-column img{position:absolute;z-index:calc(var(--chip-index) + 1);left:50%;bottom:var(--chip-bottom);width:42px;height:42px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 4px 4px #000d);transform:translateX(-50%) rotate(var(--chip-turn))}
+.pot-chip-stack.settling .pot-chip-pile{animation:pot-stack-settle 260ms ease-out}
+@keyframes pot-stack-settle{0%{transform:scale(.78);opacity:.5}70%{transform:scale(1.08)}100%{transform:none;opacity:1}}
+.card.face-up{
+  --rank-size:1.18em;
+  --suit-size:1.08em;
+  position:relative;
+  overflow:hidden;
+  border:1px solid #cfc4ad;
+  background:#f4ecda url('/assets/poker-visuals/cards/card-paper.png') center/cover;
+  box-shadow:0 4px 9px #0008,inset 0 0 0 1px #fff9;
+}
+.card.back{
+  overflow:hidden;
+  border:1px solid #b78b3d;
+  background:#06271f url('/assets/poker-visuals/cards/card-back.png') center/cover;
+  color:transparent;
+  text-shadow:none;
+}
+.card-corner{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.card-rank{font-size:var(--rank-size);line-height:.82;text-shadow:0 1px #fff9}
+.suit-symbol{font-size:var(--suit-size)!important;line-height:.78!important;margin-top:5px!important}
+.board .card{--rank-size:1.2em;--suit-size:1.12em}
+.player-seat-hole .card{--rank-size:1.12em;--suit-size:1em}
+.desktop-hand-zone .card{--rank-size:1.24em;--suit-size:1.16em}
+
+.seat{
+  --wager-x:0px;
+  --wager-y:0px;
+  width:142px;
+  min-width:142px;
+  height:166px;
+  padding:0;
+  border:0;
+  border-radius:24px;
+  background:transparent;
+  overflow:visible;
+}
+.seat0{--wager-x:96px;--wager-y:0}.seat1{--wager-x:-96px;--wager-y:0}
+.seat2{--wager-x:-100px;--wager-y:-54px}.seat5{--wager-x:100px;--wager-y:0px}
+.seat3{--wager-x:-105px;--wager-y:-100px}.seat4{--wager-x:105px;--wager-y:-100px}
+.player-seat-avatar{
+  position:absolute;
+  z-index:2;
+  top:0;
+  left:50%;
+  width:68px;
+  height:68px;
+  transform:translateX(-50%);
+  border:3px solid #ad8341;
+  border-radius:50%;
+  object-fit:cover;
+  box-shadow:0 5px 13px #000c,0 0 0 3px #111814;
+}
+.player-seat-plaque{
+  position:absolute;
+  z-index:3;
+  top:72px;
+  left:50%;
+  width:126px;
+  min-height:42px;
+  transform:translateX(-50%);
+  padding:5px 8px 4px;
+  border:1px solid #9b743b;
+  border-radius:8px;
+  background:linear-gradient(180deg,#171a17f5,#090d0bf5);
+  box-shadow:0 4px 10px #000b,inset 0 0 0 1px #f3d59c12;
+}
+.player-position-badge{position:absolute;z-index:4;top:25px;left:calc(50% + 42px);padding:3px 8px;border:1px solid #79684c;border-radius:999px;background:#111612e8;color:#d7c8a8;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 3px 7px #0008}
+.player-seat-plaque .player-name{font-size:13px;color:#f0d49b;line-height:1.05}
+.player-seat-plaque .stack{margin-top:4px;font-size:11px;color:#65d89c;line-height:1.15}
+.player-seat-hole{
+  position:absolute;
+  z-index:1;
+  top:118px;
+  left:50%;
+  width:92px;
+  height:54px;
+  transform:translateX(-50%);
+  white-space:nowrap;
+}
+.player-seat-hole .card,.seat.hero .player-seat-hole .card{
+  width:38px;
+  height:52px;
+  padding:4px;
+  margin:0 -2px;
+  font-size:17px;
+}
+.player-seat-wager{
+  top:174px;
+  bottom:auto;
+  left:50%;
+  transform:translate(calc(-50% + var(--wager-x)),var(--wager-y));
+  grid-template-columns:26px 1fr;
+  grid-template-rows:14px 10px;
+  min-width:66px;
+  padding:3px 7px 3px 3px;
+  border-color:#82652f;
+  background:#09110eed;
+}
+.player-seat-wager img{grid-row:1/3;width:25px;height:25px;border-radius:50%;object-fit:cover;filter:drop-shadow(0 2px 3px #000)}
+.player-seat-wager b{font-size:12px}.player-seat-wager small{font-size:8px}
+.seat.hero{border:0;box-shadow:none}
+.seat.acting .player-seat-avatar{border-color:#f2c665;box-shadow:0 0 0 4px #5d451d,0 0 25px #e6b34f99}
+.seat.acting .player-seat-plaque{border-color:#efc66f}
+
+.desktop-action-chip{
+  border-color:#a47b3d!important;
+  background-image:linear-gradient(#05080655,#05080655),var(--control-chip-image)!important;
+  background-position:center!important;
+  background-size:cover!important;
+  color:#fff0cf!important;
+  text-shadow:0 2px 3px #000,0 0 8px #000!important;
+  box-shadow:0 5px 12px #0009,inset 0 0 0 2px #f4dfac16!important;
+}
+.desktop-action-chip.primary-action{color:#211508!important;text-shadow:0 1px #fff8,0 0 7px #fff6!important}
+.desktop-action-chip.all-in-action{color:#ffe996!important;text-shadow:0 0 9px #e5b33d,0 2px 4px #000!important}
+.desktop-game-stage .table{padding-bottom:76px}
+.desktop-game-stage .action-banner{min-width:210px;padding-inline:12px}
+
+@media (max-height:800px) and (min-width:901px){
+  .desktop-game-stage .table{padding:12px 16px 52px}
+  .desktop-game-stage .felt{width:min(100%,620px)}
+  .desktop-game-stage .desktop-action-dock{min-height:160px}
+  .desktop-game-stage .recent-actions{display:none}
+}
+
+/* Option 3: stitched leather console with tactile poker-chip controls. */
+.desktop-action-dock{
+  min-height:174px;
+  padding-bottom:8px;
+  border:1px solid #8f6c36;
+  border-top-color:#b18a4d;
+  border-radius:18px;
+  background:
+    linear-gradient(90deg,transparent 0 2%,rgba(221,181,102,.28) 2.1%,transparent 2.25% 97.75%,rgba(221,181,102,.28) 97.9%,transparent 98%),
+    linear-gradient(180deg,rgba(255,231,181,.07),transparent 30%),
+    linear-gradient(rgba(7,9,8,.7),rgba(7,9,8,.76)),
+    url('/assets/mobile-casino/textures/leather.jpg') center 58%/720px auto;
+  box-shadow:inset 0 2px rgba(255,231,174,.1),inset 0 0 0 5px #080a09,0 -14px 28px #0008;
+}
+.desktop-action-dock::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:7px 10px 8px;
+  border:1px dashed rgba(203,161,87,.32);
+  border-radius:12px;
+  pointer-events:none;
+}
+.desktop-action-dock>*{position:relative;z-index:1}
+.desktop-action-dock .legal-summary{color:#9e927d;letter-spacing:.25px}
+.desktop-action-dock .legal-summary b{color:#e3c98d}
+.desktop-amount-rail{
+  width:min(92%,900px);
+  margin:2px auto 0;
+  display:block;
+}
+.desktop-rail-track{padding-inline:24px}
+.desktop-rail-track::before{
+  content:"";
+  position:absolute;
+  inset:0 8px 7px;
+  border:1px solid #5d4a2e;
+  border-radius:13px;
+  background:linear-gradient(180deg,#171713d9,#090b09e8);
+  box-shadow:inset 0 0 0 2px #030403,inset 0 1px #d0aa6630;
+}
+.desktop-rail-track input[type="range"]::-webkit-slider-runnable-track{
+  height:7px;
+  border-color:#9a7642;
+  background:linear-gradient(180deg,#66583d,#171914 72%);
+}
+.desktop-rail-track input[type="range"]::-webkit-slider-thumb{
+  width:27px;height:27px;margin-top:-11px;
+  border:2px solid #f2d18d;
+  background:radial-gradient(circle at 35% 28%,#fff4c8 0 10%,#d4a754 18% 43%,#785022 66%,#281a0b 82%);
+  box-shadow:0 0 0 3px #11120f,0 4px 8px #000,0 0 12px #d9aa5566;
+}
+.desktop-rail-nodes{inset:25px 24px auto}
+.desktop-rail-nodes span{color:#b1a184;font-size:10px;text-shadow:0 1px 2px #000}
+.desktop-rail-nodes span::before{background:#d1a75f;box-shadow:0 0 4px #d1a75f80}
+.desktop-action-zones{
+  width:min(100%,980px);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 138px minmax(0,1fr);
+  align-items:center;
+  gap:clamp(12px,2vw,28px);
+}
+.desktop-size-zone{
+  position:relative;
+  grid-column:1;
+  justify-self:center;
+  width:min(100%,320px);
+  height:78px;
+}
+.desktop-hand-zone{
+  position:static;
+  grid-column:2;
+  justify-self:center;
+  width:138px;
+  transform:none;
+}
+.desktop-action-zone{
+  position:static;
+  grid-column:3;
+  justify-self:center;
+  align-self:start;
+  margin-top:4px;
+  width:min(100%,320px);
+}
+.desktop-size-buttons,.desktop-action-zone{gap:10px}
+.desktop-size-buttons{
+  position:absolute;
+  inset:4px 0 auto;
+}
+.desktop-left-meta{
+  position:absolute;
+  left:0;
+  right:0;
+  top:66px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  white-space:nowrap;
+}
+.desktop-size-buttons button{
+  position:relative;
+  height:60px;
+  border:0;
+  border-radius:12px;
+  background:transparent var(--sizing-plaque-image) center/100% 100% no-repeat;
+  color:#ead6ae;
+  box-shadow:0 7px 11px #0008;
+  font-family:Georgia,"Songti SC",serif;
+  font-size:14px;
+  text-shadow:0 2px 3px #000;
+}
+.desktop-size-buttons .sizing-plaque.selected{color:#ffe1a0;filter:brightness(1.12) saturate(1.08);text-shadow:0 1px 2px #000,0 0 8px #d7a64980}
+.desktop-size-buttons .sizing-plaque:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px)}
+.desktop-size-buttons .sizing-plaque:not(:disabled):active{transform:translateY(2px);filter:brightness(.92)}
+.desktop-size-zone small{padding:0;color:#b4a588;font-size:10px}
+.desktop-hand-zone{width:138px}
+.desktop-hand-zone .card{border-radius:8px;box-shadow:0 7px 13px #000b,0 0 0 1px #fff5}
+.desktop-action-chip{
+  height:60px;
+  border-width:2px!important;
+  border-radius:50%!important;
+  background-size:116%!important;
+  box-shadow:inset 0 0 0 3px #f5dfaf1f,inset 0 0 0 7px #07080766,0 6px 12px #000b!important;
+  font-family:"Songti SC",serif;
+  font-size:15px;
+  letter-spacing:.5px;
+}
+.desktop-action-chip:not(:disabled):active,.desktop-size-buttons button:not(:disabled):active{transform:translateY(2px);box-shadow:inset 0 2px 7px #000c,0 2px 4px #000a!important}
+.desktop-action-chip:disabled,.desktop-size-buttons button:disabled{filter:grayscale(.7) brightness(.72);opacity:.4}
+@media (max-width:1160px){
+  .desktop-size-zone,.desktop-action-zone{width:min(100%,300px)}
+  .desktop-size-buttons,.desktop-action-zone{gap:6px}
+  .desktop-size-buttons button,.desktop-action-chip{height:56px;font-size:13px}
+}

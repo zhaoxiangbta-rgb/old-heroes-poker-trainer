@@ -1,5 +1,11 @@
 import type { CSSProperties } from "react";
-import { snapBetRailIndex, type BetRailNode } from "./mobileBetRail";
+import {
+  betRailNodeFraction,
+  choiceIndexAtRailFraction,
+  railFractionForChoiceIndex,
+  snapBetRailIndex,
+  type BetRailNode,
+} from "./mobileBetRail";
 
 type Props = {
   choices: number[];
@@ -12,9 +18,13 @@ type Props = {
 export function HorizontalBetSlider({ choices, value, nodes, disabled, onChange }: Props) {
   const selectedIndex = Math.max(0, choices.indexOf(value));
   const maximumIndex = Math.max(0, choices.length - 1);
+  const railResolution = Math.max(1000, maximumIndex * 4);
+  const sliderPosition = Math.round(railFractionForChoiceIndex(selectedIndex, nodes) * railResolution);
   const selectedNode = nodes.find((node) => node.index === selectedIndex);
-  const commitSnap = (index: number) => {
-    const snapped = snapBetRailIndex(index, nodes);
+  const choiceIndexForPosition = (position: number) =>
+    choiceIndexAtRailFraction(position / railResolution, nodes);
+  const commitSnap = (position: number) => {
+    const snapped = snapBetRailIndex(choiceIndexForPosition(position), nodes);
     onChange(choices[snapped] ?? choices[0]);
   };
   return (
@@ -28,23 +38,23 @@ export function HorizontalBetSlider({ choices, value, nodes, disabled, onChange 
           aria-valuetext={String(value)}
           type="range"
           min={0}
-          max={maximumIndex}
+          max={railResolution}
           step={1}
-          value={selectedIndex}
+          value={sliderPosition}
           disabled={disabled || choices.length < 2}
           data-all-in={selectedIndex === maximumIndex}
           data-snapped-node={selectedNode?.id ?? ""}
-          onChange={(event) => onChange(choices[Number(event.currentTarget.value)] ?? choices[0])}
+          onChange={(event) => onChange(choices[choiceIndexForPosition(Number(event.currentTarget.value))] ?? choices[0])}
           onPointerUp={(event) => commitSnap(Number(event.currentTarget.value))}
           onKeyUp={(event) => commitSnap(Number(event.currentTarget.value))}
         />
         <div className="mobile-rail-nodes" aria-label="下注吸附档位">
-          {nodes.map((node) => (
+          {nodes.map((node, nodeIndex) => (
             <span
               className={node.index === selectedIndex ? "active" : ""}
               data-testid="bet-rail-node"
               data-node={node.id}
-              style={{ "--node-left": `${maximumIndex ? node.index / maximumIndex * 100 : 0}%` } as CSSProperties}
+              style={{ "--node-left": `${betRailNodeFraction(nodeIndex) * 100}%` } as CSSProperties}
               key={node.id}
             >
               {node.label}

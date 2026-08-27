@@ -1,6 +1,6 @@
 [package]
 name = "poker-decision-trainer"
-version = "1.4.4"
+version = "1.4.8"
 description = "Offline poker decision training"
 authors = ["Decision Lab"]
 edition = "2021"

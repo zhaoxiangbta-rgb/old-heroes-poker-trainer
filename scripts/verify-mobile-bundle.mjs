@@ -20,6 +20,12 @@ if (portraits.length !== 6) throw new Error(`mobile bundle requires exactly six 
 for (const relative of ["textures/felt.jpg", "textures/leather.jpg", "controls/chip-fold.jpg", "controls/chip-primary.jpg", "controls/chip-all-in.jpg"]) {
   if (!files.includes(join(casinoRoot, relative))) throw new Error(`mobile casino asset missing: ${relative}`);
 }
+const visualRoot = join(root, "assets", "poker-visuals");
+const visualPortraits = files.filter((path) => path.startsWith(join(visualRoot, "avatars")) && /player-0[1-6]\.png$/.test(path));
+if (visualPortraits.length !== 6) throw new Error(`unified visual bundle requires exactly six portraits, found ${visualPortraits.length}`);
+for (const relative of ["cards/card-paper.png", "cards/card-back.png", "controls/fold.png", "controls/check.png", "controls/primary.png", "controls/all-in.png", "chips/wager-red.png", "chips/wager-blue.png", "chips/wager-green.png", "chips/wager-black.png", "chips/wager-gold.png"]) {
+  if (!files.includes(join(visualRoot, relative))) throw new Error(`unified poker visual missing: ${relative}`);
+}
 const forbidden = ["SENTINEL-DESKTOP-SECRET", "player-names.local.json", "Bella", "哈队", "倪少", "零哥", "Q大爷", "董秘"];
 for (const file of files.filter((path) => /\.(html|js|css|json)$/.test(path))) {
   const content = await readFile(file, "utf8");

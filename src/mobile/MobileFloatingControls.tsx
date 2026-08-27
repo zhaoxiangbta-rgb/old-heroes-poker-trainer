@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { PlayingCard } from "../components/PlayingCard";
 import { positionLabel, type GameAction, type GameState } from "../game/game";
 import {
@@ -7,6 +7,12 @@ import {
 } from "./mobilePrimaryAction";
 import { HorizontalBetSlider } from "./HorizontalBetSlider";
 import { mobileBetRailNodes } from "./mobileBetRail";
+import { mobileBetPresetTarget, type MobileBetPreset } from "./mobileBetSizing";
+import { POKER_CONTROL_ASSETS } from "../ui/pokerVisualAssets";
+
+function chipStyle(image: string) {
+  return { "--control-chip-image": `url(${image})` } as CSSProperties;
+}
 
 type Props = {
   game: GameState;
@@ -49,6 +55,11 @@ export function MobileFloatingControls({
       setError(reason instanceof Error ? reason.message : "当前操作不合法");
     }
   };
+  const chooseSize = (preset: MobileBetPreset) => {
+    if (locked || !game.legal.canRaise) return;
+    setAmount(mobileBetPresetTarget(game, preset));
+    setError("");
+  };
 
   return (
     <section className="mobile-floating-controls mobile-action-dock mobile-casino-dock" aria-label="行动选择">
@@ -65,13 +76,16 @@ export function MobileFloatingControls({
         />
       ) : null}
 
-      <div className="mobile-player-bankroll" role="group" aria-label="你的筹码信息">
-        <span className="mobile-bankroll-stack" aria-hidden="true"><i /><i /><i /></span>
-        <strong>余码 {hero.stack}</strong>
-        <small>你 · {positionLabel(hero.position).name}</small>
+      <div className="mobile-size-zone" aria-label="快捷下注尺寸">
+        <div className="mobile-size-buttons">
+          <button disabled={locked || !game.legal.canRaise} onClick={() => chooseSize("half-pot")}>半池</button>
+          <button disabled={locked || !game.legal.canRaise} onClick={() => chooseSize("two-thirds-pot")}>2/3池</button>
+          <button disabled={locked || !game.legal.canRaise} onClick={() => chooseSize("pot")}>底池</button>
+        </div>
+        <small>余码 {hero.stack} · {positionLabel(hero.position).name}</small>
       </div>
 
-      <div className="mobile-floating-hole mobile-centered-hole" aria-label="你的手牌">
+      <div className="mobile-floating-hole mobile-hand-zone" aria-label="你的手牌">
         <div className="mobile-floating-hole-cards">
           {hero.hole.map((card) => (
             <PlayingCard card={card} key={card} />
@@ -79,26 +93,21 @@ export function MobileFloatingControls({
         </div>
       </div>
 
-      <div className="mobile-floating-actions mobile-right-actions">
-        {game.legal.canFold ? (
-          <button className="mobile-fold-chip mobile-chip-control chip-fold" disabled={locked} onClick={() => send({ type: "fold" })}>
-            弃牌
-          </button>
-        ) : null}
-        {game.legal.canCheck ? (
-          <button className="mobile-check-chip mobile-chip-control chip-primary" disabled={locked} onClick={() => send({ type: "check" })}>
-            过牌
-          </button>
-        ) : null}
-        {primary ? (
-          <button
-            className={`mobile-primary-chip mobile-chip-control ${primary.mode === "all-in" ? "chip-all-in" : "chip-primary"} mode-${primary.mode}`}
-            disabled={locked}
-            onClick={() => send(primary.action)}
-          >
-            {primary.label}
-          </button>
-        ) : null}
+      <div className="mobile-floating-actions mobile-right-actions mobile-action-zone">
+        <button style={chipStyle(POKER_CONTROL_ASSETS.fold)} className="mobile-fold-chip mobile-chip-control chip-fold" disabled={locked || !game.legal.canFold} onClick={() => send({ type: "fold" })}>
+          弃牌
+        </button>
+        <button style={chipStyle(POKER_CONTROL_ASSETS.check)} className="mobile-check-chip mobile-chip-control chip-primary" disabled={locked || !game.legal.canCheck} onClick={() => send({ type: "check" })}>
+          过牌
+        </button>
+        <button
+          className={`mobile-primary-chip mobile-chip-control ${primary?.mode === "all-in" ? "chip-all-in" : "chip-primary"}${primary ? ` mode-${primary.mode}` : ""}`}
+          style={chipStyle(primary?.mode === "all-in" ? POKER_CONTROL_ASSETS.allIn : POKER_CONTROL_ASSETS.primary)}
+          disabled={locked || !primary}
+          onClick={() => primary && send(primary.action)}
+        >
+          {primary?.label ?? "跟注/下注"}
+        </button>
       </div>
 
       {receipt ? <p className="mobile-floating-receipt">{receipt}</p> : null}

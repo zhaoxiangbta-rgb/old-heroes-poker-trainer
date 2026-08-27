@@ -61,13 +61,14 @@ export function durationFor(
   reducedMotion: boolean,
 ) {
   if (phase === "hero-turn" || phase === "hand-complete") return 0;
-  if (reducedMotion) return phase === "submitting" ? 20 : 40;
+  if (reducedMotion)
+    return phase === "submitting" ? 20 : phase === "animating-chips" ? 120 : 100;
   if (phase === "submitting") return 20;
   if (phase === "bot-thinking")
-    return 70 + (mixed(seed, actionId, 17) % 41);
+    return 180 + (mixed(seed, actionId, 17) % 101);
   if (phase === "animating-chips")
-    return 70 + (mixed(seed, actionId, 29) % 31);
-  if (phase === "settling-pot") return 70;
+    return 320 + (mixed(seed, actionId, 29) % 101);
+  if (phase === "settling-pot") return 90;
   if (phase === "dealing-hole") return 70;
   if (phase === "dealing") return 90;
   if (phase === "showdown") return 100;
@@ -80,13 +81,13 @@ export function thinkingDuration(
   kind: ActionKind,
   reducedMotion: boolean,
 ) {
-  if (reducedMotion) return 40;
+  if (reducedMotion) return 100;
   const [minimum, maximum] =
     kind === "check" || kind === "fold"
-      ? [45, 70]
+      ? [180, 220]
       : kind === "call"
-        ? [55, 85]
-        : [70, 110];
+        ? [200, 250]
+        : [230, 280];
   return minimum + (mixed(seed, frameId, 41) % (maximum - minimum + 1));
 }
 
@@ -233,7 +234,7 @@ export function planAfterHero(
       action: log,
       actionKind: log?.kind,
       effect,
-      overlapMs: effect === "chips" && !reducedMotion ? 25 : 0,
+      overlapMs: effect === "chips" && !reducedMotion ? 100 : 0,
       durationMs:
         durationOverride ?? durationFor(state.seed, id, phase, reducedMotion),
       ...metadata,

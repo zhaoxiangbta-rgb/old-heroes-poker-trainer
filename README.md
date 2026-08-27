@@ -57,15 +57,17 @@ npm run tauri build
 
 可直接使用的安装包请到 GitHub Releases 下载：
 
-- `Old-Heroes-Poker-Trainer-v1.0.1-macOS-Apple-Silicon.dmg`
-- `Old-Heroes-Poker-Trainer-v1.0.1-Windows-x64-Portable.zip`
+- `Old-Heroes-Poker-Trainer-v1.4.8-macOS-Apple-Silicon.dmg`
+- `Old-Heroes-Poker-Trainer-v1.4.8-Windows-x64-Portable.zip`
+- `Old-Heroes-Poker-Trainer-v1.4.8-Mobile-PWA.zip`
 
 SHA-256：
 
-- macOS：`899946170cd2dec4d6a3f5acb288d7e3dff6d1263e245f8c01fe6a8e3e1b7b11`
-- Windows：`a9660aee2e098c5a312b209709a2c5458165e0b892908446536d58bcc62d0b0c`
+- macOS：`ad5eea473e3913c02a153906ab3f2b50587fc3950229f0bb12a20b75ee57dde7`
+- Windows：`a66fa11a3cca5d98d1096cb4b5ee6158f7bcf8556312b3e0c3dc84eb839d574b`
+- 移动版 PWA：`0188b952cf1e626312a09989cbc55d2d26872009890c3ed7bc80124d7a5e9e5b`
 
-Windows 免安装版解压后双击 `老英雄牌局.exe`；Windows 10/11 通常已自带 WebView2 Runtime。两端均不需要 Codex、Node、Python 或网络。
+Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗口与界面仍显示“老英雄牌局”。压缩包内部使用 ASCII 文件名，避免不同 Windows 解压工具把中文启动文件名显示成乱码。Windows 10/11 通常已自带 WebView2 Runtime。两端均不需要 Codex、Node、Python 或网络。
 
 ### 1.0.1 策略修正
 

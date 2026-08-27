@@ -59,8 +59,8 @@ describe("desktop history repository integration", () => {
     render(<App repository={repository} />);
     expect(screen.getByText("开发预览 · 数据不持久")).toBeVisible();
     expect(screen.getByText(APP_VERSION_LABEL)).toBeVisible();
-    expect(screen.getByText("本街投入到")).toBeVisible();
-    expect(screen.getAllByText("200 筹码").length).toBeGreaterThan(0);
+    expect(screen.getByRole("slider", { name: "拖动下注金额" })).toBeVisible();
+    expect(screen.getAllByText("余码 200").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "历史牌局" }));
     await waitFor(() => expect(screen.getByText(stored.result!.summary)).toBeVisible());
   });
@@ -346,11 +346,9 @@ describe("table action feedback", () => {
   it("shows the Old Heroes table brand and groups the emphasized all-in size", () => {
     render(<App />);
     expect(screen.getByText("老英雄牌局")).toBeVisible();
-    const presets = screen.getByTestId("size-presets");
-    expect(presets.querySelectorAll("button")).toHaveLength(4);
-    expect(
-      screen.getByRole("button", { name: "ALL IN" }),
-    ).toHaveClass("all-in-action");
+    const presets = screen.getByTestId("desktop-size-zone");
+    expect(presets.querySelectorAll("button")).toHaveLength(3);
+    expect(document.querySelectorAll(".desktop-rail-nodes .all-in-node")).toHaveLength(1);
   });
 
   it("uses the same face-up card contract for hole cards and the board", () => {
@@ -364,15 +362,15 @@ describe("table action feedback", () => {
     expect(boardCards).toHaveLength(3);
     expect(document.querySelectorAll(".card.suit-red")).toHaveLength(2);
     expect(document.querySelectorAll(".card.suit-black")).toHaveLength(3);
-    expect(document.querySelectorAll(".card.suit-red > .suit-symbol.suit-red")).toHaveLength(2);
-    expect(document.querySelectorAll(".card.suit-black > .suit-symbol.suit-black")).toHaveLength(3);
+    expect(document.querySelectorAll(".card.suit-red .suit-symbol.suit-red")).toHaveLength(2);
+    expect(document.querySelectorAll(".card.suit-black .suit-symbol.suit-black")).toHaveLength(3);
   });
 
   it("splits amount controls and equal basic actions without changing fold text", () => {
     render(<App />);
-    expect(screen.getByTestId("amount-actions")).toBeVisible();
-    const basics = screen.getByTestId("basic-actions");
-    expect(basics.querySelectorAll("button")).toHaveLength(2);
+    expect(screen.getByTestId("desktop-size-zone")).toBeVisible();
+    const basics = screen.getByTestId("desktop-action-zone");
+    expect(basics.querySelectorAll("button")).toHaveLength(3);
     const fold = screen.getByRole("button", { name: "弃牌" });
     fireEvent.click(fold);
     expect(fold).toHaveTextContent("弃牌");
@@ -381,17 +379,15 @@ describe("table action feedback", () => {
   it("acknowledges the first click immediately and locks every action control", () => {
     render(<App />);
     const confirm = screen.getByRole("button", { name: "确认金额" });
-    const submittedAmount = screen.getByRole("spinbutton").getAttribute("value");
+    const submittedAction = confirm.textContent;
     fireEvent.click(confirm);
-    expect(screen.getByTestId("submit-receipt")).toHaveTextContent(
-      `✓ 跟注 ${submittedAmount}`,
-    );
-    expect(confirm).toHaveTextContent("确认金额");
+    expect(screen.getByTestId("submit-receipt")).toHaveTextContent(`✓ ${submittedAction}`);
+    expect(confirm).toHaveTextContent(/跟注|下注|加注|ALL IN/);
     expect(screen.queryByText(/已提交/)).not.toBeInTheDocument();
     expect(confirm).toBeDisabled();
     expect(screen.getByRole("button", { name: "过牌" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "弃牌" })).toBeDisabled();
-    expect(screen.getByRole("spinbutton")).toBeDisabled();
+    expect(screen.getByRole("slider", { name: "拖动下注金额" })).toBeDisabled();
   });
 
   it("shows seeded friend names with Chinese-first position labels", () => {
@@ -430,18 +426,19 @@ describe("table action feedback", () => {
 
   it("fills a recommended size without submitting it", () => {
     render(<App />);
-    const input = screen.getByRole("spinbutton");
-    const presets = screen.getByTestId("size-presets");
-    expect(presets.querySelectorAll("button")).toHaveLength(4);
-    fireEvent.click(screen.getByRole("button", { name: "½池" }));
-    expect(Number(input.getAttribute("value"))).toBeGreaterThanOrEqual(2);
+    const presets = screen.getByTestId("desktop-size-zone");
+    expect(presets.querySelectorAll("button")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "半池" }));
+    expect(screen.getByRole("button", { name: "确认金额" })).toHaveTextContent(/跟注|下注|加注/);
     expect(screen.getByRole("button", { name: "确认金额" })).toBeEnabled();
     expect(screen.getByTestId("submit-receipt")).toHaveTextContent("等待操作");
   });
 
   it("submits a maximum legal all-in immediately and locks the controls", () => {
     render(<App />);
-    const allIn = screen.getByRole("button", { name: "ALL IN" });
+    fireEvent.change(screen.getByRole("slider", { name: "拖动下注金额" }), { target: { value: "1000" } });
+    const allIn = screen.getByRole("button", { name: "确认金额" });
+    expect(allIn).toHaveTextContent("ALL IN");
     fireEvent.click(allIn);
     expect(screen.getByTestId("submit-receipt")).toHaveTextContent("✓ 全下 200");
     expect(allIn).toBeDisabled();
@@ -472,11 +469,13 @@ describe("table action feedback", () => {
         onAction={onAction}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "ALL IN" }));
+    const allIn = screen.getByRole("button", { name: "确认金额" });
+    expect(allIn).toHaveTextContent("ALL IN");
+    fireEvent.click(allIn);
     expect(onAction).toHaveBeenCalledWith({ type: "call" });
   });
 
-  it("keeps all-in visible but disabled when raising is closed and a call leaves chips", () => {
+  it("keeps the legal call available when raising is closed and a call leaves chips", () => {
     const game = newGame(42);
     const hero = game.players[game.heroSeat];
     hero.stack = 20;
@@ -492,13 +491,14 @@ describe("table action feedback", () => {
     render(
       <ActionControls game={game} busy={false} receipt="" onAction={vi.fn()} />,
     );
-    expect(screen.getByRole("button", { name: "ALL IN" })).toBeDisabled();
+    const primary = screen.getByRole("button", { name: "确认金额" });
+    expect(primary).toBeEnabled();
+    expect(primary).toHaveTextContent("跟注 3");
   });
 
   it("renders gold all-in treatment only after a real all-in action", () => {
     render(<App />);
-    const input = screen.getByRole("spinbutton");
-    fireEvent.change(input, { target: { value: "200" } });
+    fireEvent.change(screen.getByRole("slider", { name: "拖动下注金额" }), { target: { value: "1000" } });
     fireEvent.click(screen.getByRole("button", { name: "确认金额" }));
     act(() => vi.advanceTimersByTime(0));
     act(() => vi.advanceTimersByTime(80));

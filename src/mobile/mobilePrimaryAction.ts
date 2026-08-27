@@ -36,6 +36,9 @@ export function mobilePrimaryAction(
 ): MobilePrimaryAction {
   const action = actionForTarget(game, amount);
   if (action.type === "call") {
+    if (game.legal.callAmount === game.players[game.heroSeat].stack) {
+      return { action, label: "ALL IN", mode: "all-in" };
+    }
     return {
       action,
       label: `跟注 ${game.legal.callAmount}`,

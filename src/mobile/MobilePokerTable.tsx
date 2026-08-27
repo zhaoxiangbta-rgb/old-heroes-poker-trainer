@@ -1,9 +1,12 @@
 import { PlayingCard } from "../components/PlayingCard";
+import { PotChipStack } from "../components/PotChipStack";
 import type { PokerTableProps } from "../components/PokerTable";
 import { positionLabel } from "../game/game";
 import { isNoActionPlayback } from "../game/playback";
 import { mobileVisualSeat } from "./mobileSeatLayout";
 import { MobilePlayerAvatar } from "./MobilePlayerAvatar";
+import { wagerChipFor } from "../ui/pokerVisualAssets";
+import { MobileTableEffects } from "./MobileTableEffects";
 
 const PLAYER_EMBLEMS = ["狼", "鲤", "隼", "發", "✥", "♞"] as const;
 
@@ -73,8 +76,9 @@ export function MobilePokerTable({
       data-table-theme={themeId}
     >
       <div className="mobile-table-ring" aria-hidden="true" />
+      <MobileTableEffects game={game} phase={phase} tokens={visualTokens} />
       <div className="mobile-table-status">{status}</div>
-      <div className="mobile-pot">底池 {game.pot}</div>
+      <PotChipStack pot={game.pot} phase={phase} className="mobile-pot-chip-stack" />
       <div className="mobile-board">
         {visibleBoard.map((card) => (
           <PlayingCard card={card} key={card} />
@@ -94,9 +98,6 @@ export function MobilePokerTable({
         const holeMoved = isHero && phase === "hero-turn";
         const emblem = isHero ? "你" : emblemForPlayer(player.playerId, player.seat);
         const thinking = phase === "bot-thinking" && visibleActor === player.seat;
-        const chipToken = [...visualTokens]
-          .reverse()
-          .find((token) => token.actorSeat === player.seat && token.effect === "chips");
         const acting =
           phase !== "dealing-hole" &&
           game.phase === "playing" &&
@@ -109,13 +110,14 @@ export function MobilePokerTable({
               (entry.street === game.street || player.folded),
           );
         const label = positionLabel(player.position);
+        const receivingPot = phase === "settling-pot" && Boolean(game.result?.winners.includes(player.seat));
         const visibleCards = player.hole.slice(0, visibleHoleCount(player.seat));
         const wagerAction = last && ["call", "bet", "raise", "all-in"].includes(last.kind)
           ? `${last.action} ${player.streetBet}`
           : `本街 ${player.streetBet}`;
         return (
           <article
-            className={`mobile-seat mobile-seat-${visualSeat}${isHero ? " hero" : ""}${player.folded && phase !== "dealing-hole" ? " folded" : ""}${acting ? " acting" : ""}${thinking ? " thinking" : ""}`}
+            className={`mobile-seat mobile-seat-${visualSeat}${isHero ? " hero" : ""}${player.folded && phase !== "dealing-hole" ? " folded" : ""}${acting ? " acting" : ""}${thinking ? " thinking" : ""}${receivingPot ? " receiving-pot" : ""}`}
             data-testid={`mobile-seat-${player.seat}`}
             data-engine-seat={player.seat}
             data-visual-seat={visualSeat}
@@ -141,7 +143,10 @@ export function MobilePokerTable({
               ))}
             </div>
             {player.streetBet ? (
-              <span className="mobile-wager">{wagerAction}</span>
+              <span className="mobile-wager">
+                <img className="mobile-wager-chip" src={wagerChipFor(player.seat)} alt="" />
+                <b>{wagerAction}</b>
+              </span>
             ) : null}
             {player.folded && phase !== "dealing-hole" ? (
               <span className="mobile-folded">已弃牌</span>
@@ -154,17 +159,6 @@ export function MobilePokerTable({
             ) : null}
             {thinking ? (
               <span className="mobile-thinking" aria-label={`${player.name}正在思考`}>
-                <i />
-                <i />
-                <i />
-              </span>
-            ) : null}
-            {chipToken ? (
-              <span
-                className={`mobile-chip-flight flight-seat-${visualSeat}`}
-                data-testid={`mobile-chip-flight-${player.seat}`}
-                aria-hidden="true"
-              >
                 <i />
                 <i />
                 <i />
