@@ -26,7 +26,11 @@ export type VisiblePolicyAction = {
   street: string;
   actorSeat: number;
   kind: string;
+  /** Chips actually moved by this action. */
+  amount?: number;
   toAmount: number;
+  /** Pot immediately before this action. */
+  potBefore?: number;
   potAfter: number;
 };
 

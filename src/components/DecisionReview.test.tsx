@@ -8,6 +8,7 @@ describe("DecisionReview", () => {
   it("renders rule-based action comparison without judging the winner", () => {
     const game = newGame(42);
     game.assessments = [{
+      scored: true,
       id: "1:0", handNo: 1, logIndex: 0, street: "preflop",
       actual: { type: "call" }, recommended: { type: "raise", to: 8 },
       candidates: [
@@ -30,5 +31,20 @@ describe("DecisionReview", () => {
     game.assessmentStatus = "failed";
     render(<DecisionReview game={game} />);
     expect(screen.getByText("本手评分未生成")).toBeTruthy();
+  });
+
+  it("labels safe-fallback reviews as reference-only instead of good", () => {
+    const game = newGame(42);
+    game.assessments = [{
+      scored: false,
+      id: "1:0", handNo: 1, logIndex: 0, street: "preflop",
+      actual: { type: "call" }, recommended: { type: "fold" },
+      candidates: [], normalizedEvLoss: 0, severity: "good", intent: "pot-control",
+      tags: [], coreRules: ["旧版安全策略仅供参考"], facts: {},
+    }];
+    render(<DecisionReview game={game} />);
+    expect(screen.getByText("仅供参考")).toBeTruthy();
+    expect(screen.queryByText("良好")).toBeNull();
+    expect(screen.getByText(/本次不计分/)).toBeTruthy();
   });
 });

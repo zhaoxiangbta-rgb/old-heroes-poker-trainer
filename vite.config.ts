@@ -7,7 +7,18 @@ const appVersion = JSON.parse(readFileSync(new URL("./package.json", import.meta
 
 export default defineConfig({
   plugins: [react()],
-  define: { __APP_VERSION__: JSON.stringify(appVersion) },
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __STRATEGY_STRESS_HANDS__: JSON.stringify(
+      Number(process.env.STRATEGY_STRESS_HANDS ?? 1_000),
+    ),
+    __STRATEGY_STRESS_ENABLED__: JSON.stringify(
+      process.env.STRATEGY_STRESS_ENABLED === "true",
+    ),
+    __STRATEGY_STRESS_FIRST_SEED__: JSON.stringify(
+      Number(process.env.STRATEGY_STRESS_FIRST_SEED ?? 1),
+    ),
+  },
   clearScreen: false,
   build: {
     manifest: true,

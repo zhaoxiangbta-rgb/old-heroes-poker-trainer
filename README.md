@@ -39,6 +39,7 @@
 ```bash
 npm install
 npm test
+npm run test:strategy
 npm run build
 npm run verify:mobile-bundle
 npm run test:pwa
@@ -57,15 +58,15 @@ npm run tauri build
 
 可直接使用的安装包请到 GitHub Releases 下载：
 
-- `Old-Heroes-Poker-Trainer-v1.4.8-macOS-Apple-Silicon.dmg`
-- `Old-Heroes-Poker-Trainer-v1.4.8-Windows-x64-Portable.zip`
-- `Old-Heroes-Poker-Trainer-v1.4.8-Mobile-PWA.zip`
+- `Old-Heroes-Poker-Trainer-v1.4.11-macOS-Apple-Silicon.dmg`
+- `Old-Heroes-Poker-Trainer-v1.4.11-Windows-x64-Portable.zip`
+- `Old-Heroes-Poker-Trainer-v1.4.11-Mobile-PWA.zip`
 
 SHA-256：
 
-- macOS：`ad5eea473e3913c02a153906ab3f2b50587fc3950229f0bb12a20b75ee57dde7`
-- Windows：`a66fa11a3cca5d98d1096cb4b5ee6158f7bcf8556312b3e0c3dc84eb839d574b`
-- 移动版 PWA：`0188b952cf1e626312a09989cbc55d2d26872009890c3ed7bc80124d7a5e9e5b`
+- macOS：`df7ebcb7938148b2509aa7072dc7785ead8ea8264e8bae751935f0ee64bba64c`
+- Windows：`b1ea6b50abecd78f5f295df35ffd500a8c3240da384c1fedeadede01d4fd5483`
+- 移动版 PWA：`599329fcbdb838baad6cae9554f8b106546ea349957e05c10f6bfe33f1fc72c9`
 
 Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗口与界面仍显示“老英雄牌局”。压缩包内部使用 ASCII 文件名，避免不同 Windows 解压工具把中文启动文件名显示成乱码。Windows 10/11 通常已自带 WebView2 Runtime。两端均不需要 Codex、Node、Python 或网络。
 
@@ -74,6 +75,18 @@ Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗�
 - 翻前第 5 次及更深层再加注收紧到真正顶端范围，普通强牌不再机械反复最小加注直到全下。
 - 翻后被过牌到时计入受人数和听牌质量约束的主动权价值，避免单挑底池出现 0% 探测下注。
 - 公开构建始终使用虚构默认名称；开发者可通过被 Git 忽略的本地构建配置替换显示名称，不改变稳定身份、画像或重放。
+
+### 策略引擎 V2 当前边界
+
+- 当前版本已经建立不泄露对手暗牌的公开决策状态、逐座位组合范围、统一候选动作/频率/EV 协议，以及对手行动与玩家评分共用的单一策略门面。
+- 翻前已使用 `preflop-abstract-v1`：覆盖六人桌 25/40/60/100/150/200BB、169 手牌类及首入池、盲注防守、隔离、挤压、3-bet、4-bet 和短码全下；相邻栈深会插值。
+- 该翻前包是“专家基线 + 边界 regret-matching 校准”的抽象均衡策略，适合初中级训练，但不冒充完整六人无限注 Solver 或商业 Solver 精度。
+- 单挑翻后已使用 `hu-postflop-abstract-v1`：按花色同构牌面纹理、单加注/3-bet/4-bet 底池、位置、主动权、手牌战略桶和真实下注比例生成混合策略；非标准尺度连续插值，极端超池和大型再加注进入固定预算局部修正。
+- 该翻后策略是“抽象蓝图 + 有界局部修正”，用于解决机械过牌、超池必弃和反加至全下等训练失真，不冒充商业 Solver 的完整无限注 GTO。
+- 三人及以上翻后使用 `multiway-resolver-v1`：按座位独立组合范围进行无冲突联合抽样，计算多人权益、干净/脏/共享补牌、反向隐含风险以及主池/边池可赢金额；身后玩家越多，边缘价值加注和纯诈唬频率越低。该结果使用低于单挑蓝图的置信度，属于适合初中级训练的本地近似，不冒充商业多人 Solver。
+- 缺少多人范围快照的旧历史继续使用明确标记且不计正式能力分的 `legacy-adapter-v1` 安全层，不会伪造新策略评分。
+- 规则引擎始终负责合法动作、任意整数下注、筹码、边池和结算；策略数据损坏时会合法降级并标明原因。
+- `npm run test:strategy` 会执行固定异常牌局、六人/单挑各 10,000 手的筹码守恒与合法性门槛，并抽检多人翻后范围解析不得无原因降级。
 
 ## 操作
 
@@ -96,9 +109,9 @@ Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗�
 牌局数据位于 macOS 应用数据目录中的 `trainer.sqlite3`。API Key 只写入 macOS Keychain，服务名为 `com.decisionlab.pokertrainer`；SQLite、日志与 JSON 导出均不包含密钥。清空历史只删除牌局数据库记录，不读取或导出密钥。
 
 - 完成的牌局、行动线、策略决策和结算跨程序启动保留。
-- 每手以 v6 快照保存固定牌局风格、六位牌友设置、当手情绪、训练目标和英雄决策评分；SQLite v3 评估索引可从完整快照重建。
+- 每手以 v7 快照保存固定牌局风格、六位牌友设置、当手情绪、训练目标和统一策略事实；SQLite v3 评估索引可从完整快照重建。
 - “本次运行”的买入、补码和盈亏只存在内存中；完全退出程序再启动后，所有玩家以 200 筹码开始新会话。
-- 历史牌局页可通过系统文件窗口导出、导入 v6 JSON；六位牌友设置随文件迁移但不含密钥，重复的 `种子:手数` 会跳过，无效或不兼容文件整批拒绝。
+- 历史牌局页可通过系统文件窗口导出、导入 v7 JSON；旧 v6 文件会迁移为可重放但不计 V2 分的历史牌局。六位牌友设置随文件迁移但不含密钥，重复的 `种子:手数` 会跳过，无效或不兼容文件整批拒绝。
 - 清空历史需要二次确认，只清除牌局；Base URL、模型名和 Keychain 密钥保留。
 - 浏览器直接打开只用于开发预览，明确显示“开发预览 · 数据不持久”；桌面安装包才使用 SQLite 和 Keychain。
 

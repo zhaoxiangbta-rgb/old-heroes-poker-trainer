@@ -48,8 +48,8 @@ for (const tag of ["overcalling", "squeeze-call-too-wide", "multiway-top-pair", 
   if (!trainingTypes.includes(tag)) failures.push(`缺少弱点标签：${tag}`);
 }
 const game = read("src/game/game.ts");
-for (const field of ["version: 6", "playerProfiles", "friendBankrolls", "tableProfileId", "trainingTarget", "assessments", "assessmentStatus"]) {
-  if (!game.includes(field)) failures.push(`缺少 GameState v6 合同：${field}`);
+for (const field of ["version: 7", "strategyVersion", "strategyDecisions", "playerProfiles", "friendBankrolls", "tableProfileId", "trainingTarget", "assessments", "assessmentStatus"]) {
+  if (!game.includes(field)) failures.push(`缺少 GameState v7 合同：${field}`);
 }
 const playerProfiles = read("src/policy/playerProfiles.ts");
 for (const field of ["friend-01", "friend-02", "friend-03", "friend-04", "friend-05", "friend-06", "effectivePlayerProfile", "validatePlayerProfiles"]) {

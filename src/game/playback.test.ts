@@ -154,7 +154,12 @@ describe("poker action playback planning", () => {
   });
 
   it("reveals the flop one visible board card at a time", () => {
-    const frames = planAfterHero(newGame(1), { type: "call" }, 10, false);
+    const frames = planAfterHero(
+      allInShowdownState("preflop"),
+      { type: "call" },
+      10,
+      false,
+    );
     const flop = frames.filter(
       (frame) => frame.phase === "dealing" && frame.state.street === "flop",
     );
@@ -326,9 +331,12 @@ describe("poker action playback planning", () => {
   });
 
   it("collects bets before dealing the next street", () => {
-    const effects = planAfterHero(newGame(1), { type: "call" }, 3, false).map(
-      (frame) => frame.effect,
-    );
+    const effects = planAfterHero(
+      allInShowdownState("preflop"),
+      { type: "call" },
+      3,
+      false,
+    ).map((frame) => frame.effect);
     const collect = effects.indexOf("collect");
     const deal = effects.indexOf("deal");
     expect(collect).toBeGreaterThanOrEqual(0);

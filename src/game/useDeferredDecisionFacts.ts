@@ -33,7 +33,7 @@ function decisionInput(game: GameState): DecisionAnalysisInput | undefined {
     known,
   );
   for (const entry of game.log.filter((item) => item.actor !== "你")) {
-    const size = entry.amount / Math.max(1, entry.potAfter - entry.amount);
+    const size = entry.amount / Math.max(1, entry.potBefore ?? entry.potAfter - entry.amount);
     range = updateRange(
       range,
       friendGameLikelihood(

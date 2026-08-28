@@ -124,12 +124,19 @@ function cacheKey(context: DecisionContext) {
 
 function postflopBase(context: DecisionContext): PostflopBase {
   const features = extractHandFeatures(context.hole, context.board);
+  const facingAggressor = [...context.visibleLine]
+    .reverse()
+    .find((entry) =>
+      entry.street === context.street &&
+      (entry.kind === "bet" || entry.kind === "raise" || entry.kind === "all-in")
+    )?.actorSeat;
   const range = inferRange({
     position: context.position,
     heroHole: context.hole,
     board: context.board,
     activePlayers: context.activePlayers,
     visibleLine: context.visibleLine,
+    opponentSeat: facingAggressor,
   });
   const equityResult = weightedEquity(context, range);
   const equity = equityResult.equity;
@@ -141,6 +148,7 @@ function postflopBase(context: DecisionContext): PostflopBase {
     context.currentBet === 0 &&
     currentStreetLine.length > 0 &&
     currentStreetLine.every((entry) => entry.kind === "check");
+  const checksBefore = checkedTo ? currentStreetLine.length : 0;
   const candidates: PolicyCandidate[] = actions.map((action) => {
     let ev = 0;
     let foldEquity = 0;
@@ -159,7 +167,8 @@ function postflopBase(context: DecisionContext): PostflopBase {
         0.04,
         Math.min(
           0.62,
-          0.3 + sizePot * 0.12 - features.strength * 0.12 -
+          0.3 + sizePot * 0.12 - features.strength * 0.12 +
+            Math.min(0.14, checksBefore * 0.045) -
             Math.max(0, context.activePlayers - 2) * 0.14 -
             context.playersBehind * 0.05 + features.nutBlockers * 0.04,
         ),
@@ -175,7 +184,9 @@ function postflopBase(context: DecisionContext): PostflopBase {
       // it, showdown equity makes checking dominate every unmade hand and the
       // table unrealistically checks down. Keep the bonus modest multiway.
       if (checkedTo) {
-        const initiative = context.activePlayers === 2 ? 0.12 : 0.04;
+        const initiative = context.activePlayers === 2
+          ? 0.12
+          : 0.07 + Math.min(0.05, checksBefore * 0.015);
         const drawBonus = Math.min(0.05, features.cleanOutEstimate * 0.006);
         ev += context.pot * (initiative + drawBonus);
       }

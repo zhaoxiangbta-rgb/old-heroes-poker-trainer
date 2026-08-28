@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "strategyVersion": "preflop-abstract-v1",
+  "algorithmVersion": "boundary-regret-v1",
+  "seed": 20260827,
+  "stackBuckets": [
+    25,
+    40,
+    60,
+    100,
+    150,
+    200
+  ],
+  "nodeCount": 288,
+  "iterations": 4000,
+  "averageRegret": 0.00000169,
+  "regretThreshold": 0.02,
+  "sha256": "fb9f0c8867b8e28655a902024d438c71b7d38ed6319db1db413dd6228461a3e9",
+  "minimumAppVersion": "1.4.10"
+}

@@ -10,6 +10,14 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>老英雄牌局 · 手机训练</title>
+    <script>
+      if (location.protocol === "file:") {
+        document.addEventListener("DOMContentLoaded", function () {
+          var panel = document.querySelector("[data-mobile-boot]");
+          if (panel) panel.innerHTML = "<strong>这是开发源文件，不是可运行的手机版</strong><br><small>请从电脑端“设置 → 手机访问”开启后，用手机打开显示的局域网地址。</small>";
+        });
+      }
+    </script>
     <script src="/mobile-boot.js"></script>
     <link rel="stylesheet" href="/mobile-app.css" />
     <script defer src="/mobile-app.js"></script>

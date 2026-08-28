@@ -47,4 +47,5 @@ export type DecisionAssessment = {
   tags: WeaknessTag[];
   coreRules: string[];
   facts: Record<string, unknown>;
+  scored: boolean;
 };

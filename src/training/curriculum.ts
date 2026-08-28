@@ -44,10 +44,12 @@ function trendOf(assessments: DecisionAssessment[]): WeaknessTrend {
 
 export function summarizeWeaknesses(hands: GameState[]): WeaknessSummary[] {
   const indexed = hands.flatMap((hand) =>
-    hand.assessments.map((assessment) => ({
-      assessment,
-      handKey: `${hand.seed}:${hand.handNo}`,
-    })),
+    hand.assessments
+      .filter((assessment) => assessment.scored)
+      .map((assessment) => ({
+        assessment,
+        handKey: `${hand.seed}:${hand.handNo}`,
+      })),
   );
   return (Object.keys(WEAKNESS_DEFINITIONS) as WeaknessTag[])
     .map((tag): WeaknessSummary => {

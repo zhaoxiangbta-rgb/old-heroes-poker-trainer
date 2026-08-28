@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { bestHand } from "../engine/evaluator";
 import type { Card } from "../engine/cards";
-import { inferRange, rangeFingerprint, type RangeModelInput } from "./rangeModel";
+import {
+  actionSizePot,
+  inferRange,
+  rangeFingerprint,
+  type RangeModelInput,
+} from "./rangeModel";
 
 function input(overrides: Partial<RangeModelInput> = {}): RangeModelInput {
   return {
@@ -21,6 +26,18 @@ function strongWeight(range: ReturnType<typeof inferRange>, board: Card[]) {
 }
 
 describe("visible-information range model", () => {
+  it("preserves the real size of an overbet after chips have entered the pot", () => {
+    expect(actionSizePot({
+      street: "turn",
+      actorSeat: 2,
+      kind: "bet",
+      amount: 30,
+      toAmount: 30,
+      potBefore: 20,
+      potAfter: 50,
+    })).toBeCloseTo(1.5);
+  });
+
   it("narrows a river pot-sized raise toward strong combinations", () => {
     const baseInput = input();
     const prior = inferRange(baseInput);

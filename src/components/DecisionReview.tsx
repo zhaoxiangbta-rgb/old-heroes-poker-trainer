@@ -23,10 +23,20 @@ export function DecisionReview({ game }: { game: GameState }) {
             <b>实际：{actionText(assessment.actual)}</b>
             <span>推荐：{actionText(assessment.recommended)}</span>
             <strong className="assessment-severity">
-              {assessment.severity === "good" ? "良好" : assessment.severity === "review" ? "需复盘" : "重点纠正"}
+              {!assessment.scored
+                ? "仅供参考"
+                : assessment.severity === "good"
+                  ? "良好"
+                  : assessment.severity === "review"
+                    ? "需复盘"
+                    : "重点纠正"}
             </strong>
           </div>
-          <small>EV 损失 {(assessment.normalizedEvLoss * 100).toFixed(1)}% · {assessment.intent}</small>
+          <small>
+            {assessment.scored
+              ? `EV 损失 ${(assessment.normalizedEvLoss * 100).toFixed(1)}% · ${assessment.intent}`
+              : `本次不计分 · ${assessment.intent}`}
+          </small>
           {assessment.candidates.length > 0 && (
             <div className="assessment-candidates" aria-label="候选策略">
               {assessment.candidates.map((candidate, index) => (

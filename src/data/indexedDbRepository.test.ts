@@ -17,7 +17,7 @@ describe("mobile IndexedDB repository", () => {
     expect(await second.loadHands()).toEqual([]);
   });
 
-  it("round-trips a v6 document atomically with settings", async () => {
+  it("round-trips a v7 document atomically with settings", async () => {
     const indexedDB = new IDBFactory();
     const source = createIndexedDbRepository({ databaseName: "source", indexedDB });
     await source.saveHand(newGame(9));

@@ -34,6 +34,20 @@ for (const file of files.filter((path) => /\.(html|js|css|json)$/.test(path))) {
   if (/192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+/.test(content)) throw new Error(`fixed private address in mobile bundle: ${file}`);
 }
 const index = await readFile(join(root, "index.html"), "utf8");
+const mobileScriptPath = files.find((path) => path.endsWith("mobile-app.js"));
+const mobileScript = mobileScriptPath ? await readFile(mobileScriptPath, "utf8") : index;
+if (!mobileScript.includes("OldHeroesMobile") && !mobileScript.includes("preflop-abstract-v1")) {
+  throw new Error("mobile strategy runtime missing");
+}
+for (const fact of [
+  "preflop-abstract-v1",
+  "hu-postflop-abstract-v1",
+  "multiway-resolver-v1",
+  "boundary-regret-v1",
+  "fb9f0c8867b8e28655a902024d438c71b7d38ed6319db1db413dd6228461a3e9",
+]) {
+  if (!mobileScript.includes(fact)) throw new Error(`mobile strategy fact missing: ${fact}`);
+}
 if (index.includes('"/assets/')) throw new Error("absolute asset URL is not compatible with a Pages subpath");
 const manifest = JSON.parse(await readFile(join(root, "manifest.webmanifest"), "utf8"));
 if (manifest.start_url !== "./" || manifest.scope !== "./" || manifest.display !== "standalone") throw new Error("invalid PWA manifest scope");

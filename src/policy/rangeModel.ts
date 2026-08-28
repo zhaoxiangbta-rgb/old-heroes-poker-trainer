@@ -15,6 +15,7 @@ export type RangeModelInput = {
   board: Card[];
   activePlayers: number;
   visibleLine: VisiblePolicyAction[];
+  opponentSeat?: number;
 };
 
 const PRIORS: Record<DecisionContext["position"], string> = {
@@ -25,6 +26,10 @@ const PRIORS: Record<DecisionContext["position"], string> = {
   SB: "AA,KK,QQ,JJ,TT,99,88,77,66,55,44,33,22,AKs,AQs,AJs,ATs,A9s,A8s,A7s,A6s,A5s,A4s,A3s,A2s,KQs,KJs,KTs,K9s,QJs,QTs,Q9s,JTs,J9s,T9s,98s,87s,76s,65s,AKo,AQo,AJo,ATo,KQo,KJo,QJo",
   BB: "AA,KK,QQ,JJ,TT,99,88,77,66,55,44,33,22,AKs,AQs,AJs,ATs,A9s,A8s,A7s,A6s,A5s,A4s,A3s,A2s,KQs,KJs,KTs,K9s,K8s,QJs,QTs,Q9s,Q8s,JTs,J9s,J8s,T9s,T8s,98s,97s,87s,86s,76s,75s,65s,64s,54s,AKo,AQo,AJo,ATo,A9o,KQo,KJo,KTo,QJo,QTo,JTo",
 };
+
+export function positionPriorNotation(position: DecisionContext["position"]) {
+  return PRIORS[position];
+}
 
 function preflopStrength(combo: WeightedCombo) {
   const ranks = combo.cards.map((card) => parseCard(card).rank).sort((a, b) => b - a);
@@ -39,9 +44,10 @@ function comboStrength(combo: WeightedCombo, board: Card[]) {
   return Math.min(1, hand.category / 8 + (hand.tiebreak[0] ?? 0) / 120);
 }
 
-function sizePot(action: VisiblePolicyAction) {
-  const before = Math.max(1, action.potAfter - action.toAmount);
-  return action.toAmount / before;
+export function actionSizePot(action: VisiblePolicyAction) {
+  const amount = action.amount ?? action.toAmount;
+  const before = Math.max(1, action.potBefore ?? action.potAfter - amount);
+  return amount / before;
 }
 
 export function inferRange(input: RangeModelInput): WeightedCombo[] {
@@ -53,11 +59,14 @@ export function inferRange(input: RangeModelInput): WeightedCombo[] {
     range = removeBlocked(buildWeightedRange(PRIORS.BTN), [...input.heroHole, ...input.board]);
   }
 
-  for (const action of input.visibleLine) {
+  const relevantLine = input.opponentSeat === undefined
+    ? input.visibleLine
+    : input.visibleLine.filter((action) => action.actorSeat === input.opponentSeat);
+  for (const action of relevantLine) {
     const aggressive = action.kind === "raise" || action.kind === "bet" || action.kind === "all-in";
     const calling = action.kind === "call";
     if (!aggressive && !calling) continue;
-    const size = sizePot(action);
+    const size = actionSizePot(action);
     range = updateRange(
       range,
       (combo) => {

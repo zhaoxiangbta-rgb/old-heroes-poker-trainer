@@ -3,9 +3,11 @@ import { newGame, type GameAction } from "../game/game";
 import type { PolicyAction, PolicyCandidate } from "../policy/types";
 import {
   assessHeroDecision,
+  assessFromStrategy,
   weaknessPredicates,
   type AssessmentContext,
 } from "./assessment";
+import type { StrategyResult } from "../strategy/types";
 import type { WeaknessTag } from "./types";
 
 function candidate(action: PolicyAction, ev: number): PolicyCandidate {
@@ -110,5 +112,63 @@ describe("decision assessment", () => {
     });
     expect(assessment.candidates.some((item) => item.action.type === "raise")).toBe(true);
     expect(assessment.normalizedEvLoss).toBeGreaterThanOrEqual(0);
+  });
+
+  it("scores preflop decisions from the unified blueprint result", () => {
+    const before = newGame(42);
+    const action: GameAction = before.legal.canCall
+      ? { type: "call" }
+      : before.legal.canCheck
+        ? { type: "check" }
+        : { type: "fold" };
+    const assessment = assessHeroDecision(before, action);
+    expect(assessment).toMatchObject({
+      scored: true,
+      facts: {
+        strategyVersion: "preflop-abstract-v1",
+        strategySource: expect.stringMatching(/blueprint|interpolated/),
+      },
+    });
+  });
+
+  it("scores a multiway resolver result and preserves its audit facts", () => {
+    const before = newGame(42);
+    const result: StrategyResult = {
+      actions: [
+        { action: "fold", frequency: 0.25, ev: 0, intent: "pot-control" },
+        { action: "call", frequency: 0.75, ev: 4, intent: "pot-control" },
+      ],
+      confidence: 0.58,
+      source: "multiway-resolver",
+      strategyVersion: "multiway-resolver-v1",
+      rangeFacts: { jointSamples: 96, dirtyOuts: 2 },
+      explanationFacts: { algorithm: "range-joint-equity+side-pot-ev-v1" },
+    };
+
+    const assessment = assessFromStrategy(before, { type: "call" }, result);
+    expect(assessment.scored).toBe(true);
+    expect(assessment.facts).toMatchObject({
+      strategyVersion: "multiway-resolver-v1",
+      strategySource: "multiway-resolver",
+      jointSamples: 96,
+      dirtyOuts: 2,
+      algorithm: "range-joint-equity+side-pot-ev-v1",
+    });
+  });
+
+  it("keeps an old safety-adapter result explicitly unscored", () => {
+    const before = newGame(42);
+    const result: StrategyResult = {
+      actions: [{ action: "check", frequency: 1, ev: 0, intent: "pot-control" }],
+      confidence: 0,
+      source: "safe-fallback",
+      strategyVersion: "legacy-adapter-v1",
+      rangeFacts: {},
+      explanationFacts: { fallback: "旧历史没有多人范围快照" },
+    };
+
+    const assessment = assessFromStrategy(before, { type: "check" }, result);
+    expect(assessment.scored).toBe(false);
+    expect(assessment.coreRules).toContain("旧版安全策略仅供参考，本次决策不计入能力评分");
   });
 });

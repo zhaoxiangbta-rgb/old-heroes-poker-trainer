@@ -1,11 +1,14 @@
 import type { GameAction, GameState } from "../game/game";
 import { extractHandFeatures } from "../policy/handFeatures";
-import { decideWithProfile } from "../policy/tableProfiles";
 import type {
   DecisionContext,
   PolicyAction,
   PolicyCandidate,
 } from "../policy/types";
+import { createLocalStrategyEngine } from "../strategy/engine";
+import { buildPublicDecisionState } from "../strategy/publicState";
+import { buildRangeLedger, snapshotRangeLedger } from "../strategy/rangeLedger";
+import type { StrategyAction, StrategyResult } from "../strategy/types";
 import type {
   AssessmentSeverity,
   DecisionAssessment,
@@ -85,50 +88,27 @@ export const weaknessPredicates: Record<
     (c.actual.type === "call" || isRaise(c.actual)),
 };
 
-function policyContext(state: GameState): DecisionContext {
-  const seat = state.heroSeat;
-  const player = state.players[seat];
-  const opponentStacks = state.players
-    .filter((opponent) => !opponent.folded && opponent.seat !== seat)
-    .map((opponent) => opponent.stack);
-  return {
-    seed: state.seed,
-    decisionIndex: state.policyDecisions.length + state.assessments.length,
-    seat,
-    street: state.street,
-    position: player.position,
-    hole: player.hole as DecisionContext["hole"],
-    board: [...state.board],
-    pot: state.pot,
-    currentBet: state.currentBet,
-    streetBet: player.streetBet,
-    stack: player.stack,
-    effectiveStack: Math.min(player.stack, Math.max(0, ...opponentStacks)),
-    activePlayers: state.players.filter((opponent) => !opponent.folded).length,
-    playersBehind: Math.max(0, state.pending.indexOf(seat) >= 0 ? state.pending.length - 1 : 0),
-    minRaiseTo: state.legal.minRaiseTo,
-    maxRaiseTo: state.legal.maxRaiseTo,
-    legal: {
-      fold: state.legal.canFold,
-      check: state.legal.canCheck,
-      call: state.legal.canCall ? state.legal.callAmount : 0,
-      raise: state.legal.canRaise,
-    },
-    visibleLine: state.log.map((entry) => ({
-      street: entry.street,
-      actorSeat: entry.actorSeat,
-      kind: entry.kind,
-      toAmount: entry.toAmount,
-      potAfter: entry.potAfter,
-    })),
-  };
-}
-
 function distance(action: PolicyAction, candidate: PolicyAction) {
   if (action.type !== candidate.type) return Number.POSITIVE_INFINITY;
   if (action.type === "raise" && candidate.type === "raise")
     return Math.abs(action.to - candidate.to);
   return 0;
+}
+
+function policyAction(action: StrategyAction): PolicyAction {
+  if (action.action === "fold" || action.action === "check" || action.action === "call")
+    return { type: action.action };
+  return { type: "raise", to: action.toAmount ?? 0 };
+}
+
+function policyCandidates(result: StrategyResult): PolicyCandidate[] {
+  return result.actions.map((action) => ({
+    action: policyAction(action),
+    label: action.action,
+    ev: action.ev,
+    probability: action.frequency,
+    intent: action.intent,
+  }));
 }
 
 function matchingCandidate(action: GameAction, candidates: PolicyCandidate[]) {
@@ -220,26 +200,43 @@ export function assessHeroDecision(
   before: GameState,
   action: GameAction,
 ): DecisionAssessment {
-  const decision = decideWithProfile(policyContext(before), before.tableProfileId);
-  const best = [...decision.candidates].sort((a, b) => b.ev - a.ev)[0];
-  const actualCandidate = matchingCandidate(action, decision.candidates) ?? best;
+  const publicState = buildPublicDecisionState(before, before.heroSeat);
+  const ranges = snapshotRangeLedger(buildRangeLedger(publicState));
+  const result = createLocalStrategyEngine().decide({
+    state: publicState,
+    ranges,
+    deadlineMs: 250,
+  });
+  return assessFromStrategy(before, action, result);
+}
+
+export function assessFromStrategy(
+  before: GameState,
+  action: GameAction,
+  result: StrategyResult,
+): DecisionAssessment {
+  const candidates = policyCandidates(result);
+  const best = [...candidates].sort((a, b) => b.ev - a.ev)[0];
+  const actualCandidate = matchingCandidate(action, candidates) ?? best;
   const risk = Math.max(1, before.pot, before.legal.callAmount);
   const normalizedEvLoss = Math.max(0, (best.ev - actualCandidate.ev) / risk);
-  const severity = severityFor(normalizedEvLoss);
+  const scored = result.source !== "safe-fallback";
+  const severity = scored ? severityFor(normalizedEvLoss) : "good";
   const context = assessmentContext(
     before,
     action,
     best.action,
-    decision.candidates,
+    candidates,
     severity,
   );
-  const tags = (Object.keys(weaknessPredicates) as WeaknessTag[]).filter((tag) =>
-    weaknessPredicates[tag](context),
-  );
-  const coreRules =
-    severity === "good" &&
-    best.probability >= 0.2 &&
-    actualCandidate.probability >= 0.2
+  const tags = scored
+    ? (Object.keys(weaknessPredicates) as WeaknessTag[]).filter((tag) =>
+        weaknessPredicates[tag](context),
+      )
+    : [];
+  const coreRules = !scored
+    ? ["旧版安全策略仅供参考，本次决策不计入能力评分"]
+    : severity === "good" && best.probability >= 0.2 && actualCandidate.probability >= 0.2
       ? ["均可，推荐频率不同"]
       : tags.length
         ? tags.map((tag) => `核心规则：${tag}`)
@@ -251,14 +248,13 @@ export function assessHeroDecision(
     street: before.street,
     actual: action,
     recommended: best.action,
-    candidates: decision.candidates,
-    normalizedEvLoss,
+    candidates,
+    normalizedEvLoss: scored ? normalizedEvLoss : 0,
     severity,
     intent: actualCandidate.intent,
     tags,
     coreRules,
     facts: {
-      ...decision.facts,
       activePlayers: context.activePlayers,
       playersBehind: context.playersBehind,
       pressureRatio: context.pressureRatio,
@@ -266,6 +262,12 @@ export function assessHeroDecision(
       dirtyOuts: context.dirtyOuts,
       handClass: context.handClass,
       relevantTags: relevantTagsFor(context),
+      ...result.rangeFacts,
+      ...result.explanationFacts,
+      strategyVersion: result.strategyVersion,
+      strategySource: result.source,
+      strategyConfidence: result.confidence,
     },
+    scored,
   };
 }

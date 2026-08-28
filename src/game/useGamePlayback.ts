@@ -86,6 +86,8 @@ export function useGamePlayback(
     if (frame.effect !== "receipt") {
       const visualDuration = frame.effect === "chips"
         ? Math.max(frame.durationMs, 340)
+        : frame.effect === "fold"
+          ? Math.max(frame.durationMs, 620)
         : frame.effect === "all-in"
           ? Math.max(frame.durationMs, 520)
           : frame.durationMs;

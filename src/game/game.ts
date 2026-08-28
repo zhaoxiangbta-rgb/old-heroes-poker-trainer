@@ -1,8 +1,12 @@
 import { createDeck, type Card } from "../engine/cards";
 import { bestHand, compareHands } from "../engine/evaluator";
 import { buildPots, settlePots, type Pot } from "../engine/pots";
-import { decideWithProfile, type TableProfileId } from "../policy/tableProfiles";
-import type { DecisionContext, PolicyDecision } from "../policy/types";
+import type { TableProfileId } from "../policy/tableProfiles";
+import type { PolicyAction, PolicyCandidate, PolicyDecision } from "../policy/types";
+import { createLocalStrategyEngine, selectStrategyAction } from "../strategy/engine";
+import { buildPublicDecisionState } from "../strategy/publicState";
+import { buildRangeLedger, snapshotRangeLedger } from "../strategy/rangeLedger";
+import type { StrategyAction, StrategyResult } from "../strategy/types";
 import type {
   AssessmentStatus,
   DecisionAssessment,
@@ -79,6 +83,7 @@ export type GameLog = {
   action: string;
   amount: number;
   toAmount: number;
+  potBefore?: number;
   potAfter: number;
 };
 export type Legal = {
@@ -103,8 +108,17 @@ export type PolicyDecisionRecord = {
   logIndex: number;
   decision: PolicyDecision;
 };
+export type StrategyDecisionRecord = {
+  seat: number;
+  street: Street;
+  logIndex: number;
+  selectedAction: StrategyAction["action"];
+  sampled: number;
+  result: StrategyResult;
+};
 export type GameState = {
-  version: 6;
+  version: 7;
+  strategyVersion: string;
   seed: number;
   rng: number;
   handNo: number;
@@ -130,6 +144,7 @@ export type GameState = {
   result?: Result;
   raiseToReopen: number[];
   policyDecisions: PolicyDecisionRecord[];
+  strategyDecisions: StrategyDecisionRecord[];
   tableProfileId: TableProfileId;
   trainingTarget: TrainingTarget;
   assessments: DecisionAssessment[];
@@ -378,6 +393,7 @@ function advanceStreet(s: GameState): GameState {
 function commit(s: GameState, seat: number, a: GameAction) {
   const p = s.players[seat],
     l = legalFor(s, seat);
+  const potBefore = s.pot;
   s.pending = s.pending.filter((x) => x !== seat);
   s.raiseToReopen ??= s.players.map(() => 0);
   if (a.type === "fold") {
@@ -393,6 +409,7 @@ function commit(s: GameState, seat: number, a: GameAction) {
       action: "弃牌",
       amount: 0,
       toAmount: p.streetBet,
+      potBefore,
       potAfter: s.pot,
     });
   } else if (a.type === "check") {
@@ -406,6 +423,7 @@ function commit(s: GameState, seat: number, a: GameAction) {
       action: "过牌",
       amount: 0,
       toAmount: p.streetBet,
+      potBefore,
       potAfter: s.pot,
     });
   } else if (a.type === "call") {
@@ -421,6 +439,7 @@ function commit(s: GameState, seat: number, a: GameAction) {
       action: kind === "all-in" ? "全下" : "跟注",
       amount: paid,
       toAmount: p.streetBet,
+      potBefore,
       potAfter: s.pot,
     });
   } else {
@@ -429,7 +448,7 @@ function commit(s: GameState, seat: number, a: GameAction) {
       throw new Error(`合法加注范围 ${l.minRaiseTo}–${l.maxRaiseTo}`);
     const old = s.currentBet;
     const fullRaise = a.to >= old + s.minRaise;
-    pay(s, p, a.to - p.streetBet);
+    const paid = pay(s, p, a.to - p.streetBet);
     if (fullRaise) {
       s.minRaise = a.to - old;
       s.pending = orderFrom(s, (seat + 1) % s.players.length).filter(
@@ -456,51 +475,14 @@ function commit(s: GameState, seat: number, a: GameAction) {
       kind,
       action:
         kind === "all-in" ? "全下" : kind === "bet" ? "下注到" : "加注到",
-      amount: a.to,
+      amount: paid,
       toAmount: p.streetBet,
+      potBefore,
       potAfter: s.pot,
     });
   }
   if (live(s).length === 1) return finishUncontested(s);
   return sync(s);
-}
-function policyContext(s: GameState, seat: number): DecisionContext {
-  const player = s.players[seat];
-  const legal = legalFor(s, seat);
-  const opponentStacks = live(s)
-    .filter((opponent) => opponent.seat !== seat)
-    .map((opponent) => opponent.stack);
-  return {
-    seed: s.seed,
-    decisionIndex: s.policyDecisions.length,
-    seat,
-    street: s.street,
-    position: player.position,
-    hole: player.hole as [Card, Card],
-    board: [...s.board],
-    pot: s.pot,
-    currentBet: s.currentBet,
-    streetBet: player.streetBet,
-    stack: player.stack,
-    effectiveStack: Math.min(player.stack, Math.max(0, ...opponentStacks)),
-    activePlayers: live(s).length,
-    playersBehind: Math.max(0, s.pending.indexOf(seat) >= 0 ? s.pending.length - 1 : 0),
-    minRaiseTo: legal.minRaiseTo,
-    maxRaiseTo: legal.maxRaiseTo,
-    legal: {
-      fold: legal.canFold,
-      check: legal.canCheck,
-      call: legal.canCall ? legal.callAmount : 0,
-      raise: legal.canRaise,
-    },
-    visibleLine: s.log.map((entry) => ({
-      street: entry.street,
-      actorSeat: entry.actorSeat,
-      kind: entry.kind,
-      toAmount: entry.toAmount,
-      potAfter: entry.potAfter,
-    })),
-  };
 }
 function isLegalPolicyAction(action: GameAction, legal: Legal) {
   if (action.type === "fold") return legal.canFold;
@@ -512,11 +494,61 @@ function isLegalPolicyAction(action: GameAction, legal: Legal) {
     action.to <= legal.maxRaiseTo
   );
 }
+function gameActionFromStrategy(action: StrategyAction): GameAction {
+  if (action.action === "fold" || action.action === "check" || action.action === "call")
+    return { type: action.action };
+  return { type: "raise", to: action.toAmount ?? 0 };
+}
+function policyActionFromStrategy(action: StrategyAction): PolicyAction {
+  return gameActionFromStrategy(action);
+}
+function numberFact(result: StrategyResult, key: string) {
+  const value = result.explanationFacts[key] ?? result.rangeFacts[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+function legacyDecisionRecord(
+  result: StrategyResult,
+  selected: StrategyAction,
+  sampled: number,
+): PolicyDecision {
+  const candidates: PolicyCandidate[] = result.actions.map((action) => ({
+    action: policyActionFromStrategy(action),
+    label: action.action,
+    ev: action.ev,
+    probability: action.frequency,
+    intent: action.intent,
+  }));
+  return {
+    action: policyActionFromStrategy(selected),
+    candidates,
+    facts: {
+      strength: numberFact(result, "strength"),
+      equity: numberFact(result, "equity"),
+      requiredEquity: numberFact(result, "requiredEquity"),
+      spr: numberFact(result, "spr"),
+      rangeCombos: numberFact(result, "rangeCombos"),
+      sampled,
+      elapsedMs: 0,
+      ...(result.explanationFacts.fallback
+        ? { fallback: String(result.explanationFacts.fallback) }
+        : {}),
+    },
+  };
+}
 function commitBot(s: GameState, seat: number) {
-  const decision = decideWithProfile(
-    policyContext(s, seat),
-    s.tableProfileId,
-    s.players[seat].profile,
+  const publicState = buildPublicDecisionState(s, seat);
+  const ranges = snapshotRangeLedger(buildRangeLedger(publicState));
+  const result = createLocalStrategyEngine().decide({
+    state: publicState,
+    ranges,
+    deadlineMs: 250,
+    playerProfile: s.players[seat].profile,
+  });
+  if (result.source !== "safe-fallback") s.strategyVersion = result.strategyVersion;
+  const selection = selectStrategyAction(
+    result,
+    publicState.seed,
+    publicState.decisionIndex,
   );
   const legal = legalFor(s, seat);
   const fallback: GameAction = legal.canCheck
@@ -524,17 +556,24 @@ function commitBot(s: GameState, seat: number) {
     : legal.canCall
       ? { type: "call" }
       : { type: "fold" };
-  const action = isLegalPolicyAction(decision.action, legal)
-    ? decision.action
+  const strategyAction = selection.action;
+  const requestedAction = gameActionFromStrategy(strategyAction);
+  const action = isLegalPolicyAction(requestedAction, legal)
+    ? requestedAction
     : fallback;
-  const recordedDecision =
-    action === decision.action
-      ? decision
-      : {
-          ...decision,
-          action,
-          facts: { ...decision.facts, fallback: "策略输出未通过规则引擎合法性校验" },
-        };
+  const recordedDecision = legacyDecisionRecord(result, strategyAction, selection.sampled);
+  if (!isLegalPolicyAction(requestedAction, legal)) {
+    recordedDecision.action = action;
+    recordedDecision.facts.fallback = "策略输出未通过规则引擎合法性校验";
+  }
+  s.strategyDecisions.push({
+    seat,
+    street: s.street,
+    logIndex: s.log.length,
+    selectedAction: strategyAction.action,
+    sampled: selection.sampled,
+    result,
+  });
   s.policyDecisions.push({
     seat,
     street: s.street,
@@ -699,7 +738,8 @@ export function newGame(
     },
   );
   const s: GameState = {
-    version: 6,
+    version: 7,
+    strategyVersion: "preflop-abstract-v1",
     seed,
     rng: shuffledDeck.rng,
     handNo,
@@ -724,6 +764,7 @@ export function newGame(
     log: [],
     raiseToReopen: Array(playerCount).fill(0),
     policyDecisions: [],
+    strategyDecisions: [],
     tableProfileId: options.tableProfileId ?? "balanced",
     trainingTarget: options.trainingTarget ?? { mode: "none" },
     assessments: [],
@@ -744,9 +785,17 @@ export function act(state: GameState, action: GameAction): GameState {
   return sync(s);
 }
 export function normalizeGameState(state: GameState): GameState {
-  const s = structuredClone(state) as GameState & {
+  const raw = structuredClone(state) as unknown as Record<string, unknown>;
+  if (raw.version === 6) {
+    raw.version = 7;
+    raw.strategyVersion = "legacy-v6";
+    raw.strategyDecisions = [];
+  }
+  if (raw.version !== 7) throw new Error("牌局数据版本不兼容");
+  const s = raw as GameState & {
     raiseToReopen?: number[];
     policyDecisions?: PolicyDecisionRecord[];
+    strategyDecisions?: StrategyDecisionRecord[];
     tableProfileId?: TableProfileId;
     trainingTarget?: TrainingTarget;
     assessments?: DecisionAssessment[];
@@ -804,10 +853,18 @@ export function normalizeGameState(state: GameState): GameState {
     });
   }
   if (!Array.isArray(s.policyDecisions)) s.policyDecisions = [];
+  if (!Array.isArray(s.strategyDecisions)) s.strategyDecisions = [];
+  if (typeof s.strategyVersion !== "string" || !s.strategyVersion)
+    s.strategyVersion = "legacy-adapter-v1";
   s.trainingTarget ??= { mode: "none" };
   if (!Array.isArray(s.assessments)) s.assessments = [];
+  s.assessments = s.assessments.map((assessment) => ({
+    ...assessment,
+    scored: typeof assessment.scored === "boolean"
+      ? assessment.scored
+      : s.strategyVersion !== "legacy-v6",
+  }));
   s.assessmentStatus ??= "ready";
-  if (s.version !== 6) throw new Error("牌局数据版本不兼容");
   return sync(s as GameState);
 }
 export function isHeroTurn(state: GameState) {

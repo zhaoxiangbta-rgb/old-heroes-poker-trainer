@@ -259,6 +259,7 @@ function settledShowdownState() {
 
 function weakAssessment(index: number): DecisionAssessment {
   return {
+    scored: true,
     id: `weak-${index}`,
     handNo: index + 1,
     logIndex: 0,
@@ -546,7 +547,7 @@ describe("table action feedback", () => {
   });
 
   it("reveals flop cards progressively without exposing partial engine state", () => {
-    const game = newGame(1);
+    const game = allInRunoutState("preflop");
     const flop = planAfterHero(game, { type: "call" }, 10, false).find(
       (candidate) => candidate.phase === "dealing" && candidate.visibleBoardCount === 1,
     )!;

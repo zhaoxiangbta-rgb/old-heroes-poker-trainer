@@ -90,6 +90,23 @@ describe("useGamePlayback", () => {
     ).toBe(true);
   });
 
+  it("keeps a fold visual visible after the action queue has already advanced", () => {
+    const initial = newGame(42);
+    const { result } = renderHook(() => useGamePlayback(initial));
+
+    act(() => result.current.submit({ type: "fold" }));
+    act(() => vi.advanceTimersByTime(0));
+    act(() => vi.advanceTimersByTime(20));
+    expect(
+      result.current.visualTokens.some((token) => token.effect === "fold"),
+    ).toBe(true);
+
+    act(() => vi.advanceTimersByTime(500));
+    expect(
+      result.current.visualTokens.some((token) => token.effect === "fold"),
+    ).toBe(true);
+  });
+
   it("formats concise receipts for every hero action", () => {
     const game = newGame(42);
     expect(formatReceipt(game, { type: "call" })).toBe(

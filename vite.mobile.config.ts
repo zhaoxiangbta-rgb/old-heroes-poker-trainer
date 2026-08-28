@@ -43,5 +43,10 @@ export default defineConfig({
     },
     outDir: "dist",
     target: "safari14",
+    minify: "terser",
+    terserOptions: {
+      compress: { passes: 2 },
+      format: { comments: false },
+    },
   },
 });

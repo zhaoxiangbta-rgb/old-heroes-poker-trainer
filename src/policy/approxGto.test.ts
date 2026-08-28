@@ -48,6 +48,31 @@ describe("local approximate GTO policy", () => {
     expect(rate(spot(), "fold")).toBeGreaterThan(0.85);
   });
 
+  it("defends selectively instead of folding every hand to an overbet", () => {
+    const facingOverbet = spot({
+      street: "turn",
+      board: ["Ah", "7h", "2s", "9d"],
+      pot: 50,
+      currentBet: 30,
+      streetBet: 0,
+      minRaiseTo: 60,
+      maxRaiseTo: 170,
+      legal: { fold: true, check: false, call: 30, raise: true },
+      visibleLine: [{
+        street: "turn",
+        actorSeat: 2,
+        kind: "bet",
+        amount: 30,
+        toAmount: 30,
+        potBefore: 20,
+        potAfter: 50,
+      }],
+    });
+    expect(rate({ ...facingOverbet, hole: ["Ac", "Ad"] }, "fold")).toBeLessThan(0.05);
+    expect(rate({ ...facingOverbet, hole: ["As", "Jd"] }, "fold")).toBeLessThan(0.8);
+    expect(rate({ ...facingOverbet, hole: ["Kh", "Qh"] }, "fold")).toBeLessThan(0.9);
+  });
+
   it("value bets strong hands more often than checking", () => {
     const context = spot({
       hole: ["Ac", "Ad"],
@@ -60,13 +85,10 @@ describe("local approximate GTO policy", () => {
   });
 
   it("keeps a meaningful stab frequency after the action checks to a player", () => {
-    let bets = 0;
-    for (let seed = 1; seed <= 400; seed++) {
-      const decision = approxGtoPolicy.decide(spot({
-        seed,
+    const decision = approxGtoPolicy.decide(spot({
         decisionIndex: 4,
         street: "flop",
-        hole: [seed % 2 ? "Qh" : "9h", seed % 3 ? "Jd" : "8d"],
+        hole: ["Qh", "Jd"],
         board: ["Ah", "7c", "2s"],
         pot: 18,
         currentBet: 0,
@@ -80,9 +102,36 @@ describe("local approximate GTO policy", () => {
           { street: "flop", actorSeat: 0, kind: "check", toAmount: 0, potAfter: 18 },
         ],
       }));
-      if (decision.action.type === "raise") bets++;
-    }
-    expect(bets / 400).toBeGreaterThanOrEqual(0.2);
+    const probability = decision.candidates
+      .filter((candidate) => candidate.action.type === "raise")
+      .reduce((sum, candidate) => sum + candidate.probability, 0);
+    expect(probability).toBeGreaterThanOrEqual(0.35);
+  }, 15_000);
+
+  it("does not routinely check through when several players show weakness", () => {
+    const decision = approxGtoPolicy.decide(spot({
+        decisionIndex: 7,
+        street: "flop",
+        hole: ["Qh", "Jd"],
+        board: ["Ah", "7c", "2s"],
+        pot: 24,
+        currentBet: 0,
+        streetBet: 0,
+        activePlayers: 4,
+        playersBehind: 0,
+        minRaiseTo: 8,
+        maxRaiseTo: 194,
+        legal: { fold: false, check: true, call: 0, raise: true },
+        visibleLine: [
+          { street: "flop", actorSeat: 0, kind: "check", toAmount: 0, potAfter: 24 },
+          { street: "flop", actorSeat: 1, kind: "check", toAmount: 0, potAfter: 24 },
+          { street: "flop", actorSeat: 2, kind: "check", toAmount: 0, potAfter: 24 },
+        ],
+      }));
+    const probability = decision.candidates
+      .filter((candidate) => candidate.action.type === "raise")
+      .reduce((sum, candidate) => sum + candidate.probability, 0);
+    expect(probability).toBeGreaterThanOrEqual(0.15);
   }, 15_000);
 
   it("bluffs less often multiway than heads-up", () => {

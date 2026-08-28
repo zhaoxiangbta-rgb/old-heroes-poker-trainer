@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { tmpdir } from "node:os";
 import { mkdtemp } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import vm from "node:vm";
 import { buildPwaAssets } from "./build-pwa-assets.mjs";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -82,4 +83,40 @@ test("recursively copies and precaches mobile casino assets", async () => {
   const result = await buildPwaAssets({ distDir, sourceDir, iconDir, publicDir, version: "1.0.0" });
   await access(join(distDir, "assets", "mobile-casino", "avatars", "player-01.jpg"));
   assert.ok(result.precache.includes("./assets/mobile-casino/avatars/player-01.jpg"));
+});
+
+test("uses the latest network page for navigation before falling back to the cached shell", async () => {
+  const source = (await readFile(join(projectRoot, "mobile", "service-worker.template.js"), "utf8"))
+    .replace("__CACHE_NAME__", JSON.stringify("test-cache"))
+    .replace("__APP_VERSION__", JSON.stringify("9.9.9"))
+    .replace("__PRECACHE__", JSON.stringify(["./index.html"]));
+  const handlers = new Map();
+  const cached = new Response("stale-page");
+  const latest = new Response("latest-page");
+  const context = {
+    URL,
+    Promise,
+    caches: {
+      match: async () => cached,
+      open: async () => ({ addAll: async () => undefined }),
+      keys: async () => [],
+      delete: async () => true,
+    },
+    fetch: async () => latest,
+    self: {
+      location: { origin: "http://phone.test" },
+      clients: { matchAll: async () => [], claim: async () => undefined },
+      skipWaiting: async () => undefined,
+      addEventListener: (type, handler) => handlers.set(type, handler),
+    },
+  };
+  vm.runInNewContext(source, context);
+  let responsePromise;
+
+  handlers.get("fetch")({
+    request: { method: "GET", mode: "navigate", url: "http://phone.test/mobile/" },
+    respondWith: (value) => { responsePromise = value; },
+  });
+
+  assert.equal(await (await responsePromise).text(), "latest-page");
 });

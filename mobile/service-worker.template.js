@@ -43,7 +43,7 @@ self.addEventListener("fetch",(event)=>{
   const requestUrl=new URL(event.request.url);
   if(requestUrl.origin!==self.location.origin) return;
   if(event.request.mode==="navigate") {
-    event.respondWith(caches.match("./index.html").then((cached)=>cached||fetch(event.request).catch(()=>caches.match("./recovery.html"))));
+    event.respondWith(fetch(event.request).catch(async()=>await caches.match("./index.html")||caches.match("./recovery.html")));
     return;
   }
   event.respondWith(caches.match(event.request).then((cached)=>cached||fetch(event.request)));

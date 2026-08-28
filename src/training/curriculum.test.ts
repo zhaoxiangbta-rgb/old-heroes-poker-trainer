@@ -12,6 +12,7 @@ function assessment(
   loss: number,
 ): DecisionAssessment {
   return {
+    scored: true,
     id: `${index}`,
     handNo: index + 1,
     logIndex: index,
@@ -96,5 +97,13 @@ describe("weakness curriculum", () => {
 
   it("uses balanced training when no formal weakness exists", () => {
     expect(chooseAutomaticTarget(summarizeWeaknesses([]))).toEqual({ mode: "none" });
+  });
+
+  it("excludes safe-fallback assessments from weakness samples", () => {
+    const unscored = assessment("overcalling", 1, 0.2);
+    unscored.scored = false;
+    const summary = summarizeWeaknesses([handWith([unscored])])
+      .find((item) => item.tag === "overcalling")!;
+    expect(summary).toMatchObject({ samples: 0, status: "collecting" });
   });
 });

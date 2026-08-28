@@ -31,6 +31,17 @@ function playChecksToEnd(initial: GameState) {
   }
   return s;
 }
+
+const STRATEGY_STRESS_CHUNKS = [6, 2].flatMap((playerCount) =>
+  Array.from(
+    { length: Math.ceil(__STRATEGY_STRESS_HANDS__ / 1_000) },
+    (_, index) => ({
+      playerCount,
+      firstSeed: index * 1_000 + 1,
+      lastSeed: Math.min((index + 1) * 1_000, __STRATEGY_STRESS_HANDS__),
+    }),
+  ),
+);
 describe("playable hand loop", () => {
   it("allows the hero to fold instead of checking when action is unopened", () => {
     const state = newGame(42);
@@ -58,10 +69,10 @@ describe("playable hand loop", () => {
   });
   it("randomizes hero position across seeded hands", () => {
     const positions = new Set(
-      Array.from(
-        { length: 180 },
-        (_, i) => newGame(i + 1).players[newGame(i + 1).heroSeat].position,
-      ),
+      Array.from({ length: 180 }, (_, i) => {
+        const state = newGame(i + 1);
+        return state.players[state.heroSeat].position;
+      }),
     );
     expect(positions.size).toBe(6);
   });
@@ -126,19 +137,40 @@ describe("playable hand loop", () => {
     );
     expect(JSON.stringify(record)).not.toMatch(/hole|opponentHole/i);
   });
+  it("records the exact unified strategy result used by each opponent action", () => {
+    const heroDone = applyHeroAction(newGame(42), { type: "call" });
+    const before = heroDone.strategyDecisions.length;
+    const botDone = applyNextBotAction(heroDone);
+    const record = botDone.strategyDecisions.at(-1)!;
+    expect(botDone.strategyDecisions).toHaveLength(before + 1);
+    expect(record).toMatchObject({
+      seat: heroDone.pending[0],
+      street: heroDone.street,
+      logIndex: heroDone.log.length,
+      result: {
+        strategyVersion: "preflop-abstract-v1",
+        source: expect.stringMatching(/blueprint|interpolated/),
+      },
+    });
+    expect(record.result.actions).toContainEqual(
+      expect.objectContaining({ action: record.selectedAction }),
+    );
+    expect(JSON.stringify(record)).not.toMatch(/opponentHole/i);
+  });
   it("replays local-policy choices and decision facts exactly from the same seed", () => {
     const first = act(newGame(77), { type: "call" });
     const replay = act(newGame(77), { type: "call" });
     expect(replay.policyDecisions).toEqual(first.policyDecisions);
     expect(replay.log).toEqual(first.log);
   });
-  it("pins the table profile, player profiles and training target into a version-six hand", () => {
+  it("pins the table profile, player profiles and training target into a version-seven hand", () => {
     const state = newGame(42, 1, undefined, undefined, {
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },
     });
     expect(state).toMatchObject({
-      version: 6,
+      version: 7,
+      strategyVersion: "preflop-abstract-v1",
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },
       assessments: [],
@@ -390,13 +422,12 @@ describe("playable hand loop", () => {
     );
   });
 
-  it(
-    "simulates 1000 six-max and 1000 heads-up policy hands legally",
-    () => {
+  it.each(STRATEGY_STRESS_CHUNKS)(
+    "simulates $playerCount-player strategy seeds $firstSeed-$lastSeed legally",
+    ({ playerCount, firstSeed, lastSeed }) => {
       const failures: string[] = [];
       let policyDecisions = 0;
-      for (const playerCount of [6, 2]) {
-        for (let seed = 1; seed <= 1000; seed++) {
+      for (let seed = firstSeed; seed <= lastSeed; seed++) {
           // Two-chip stacks force every continuing player all-in preflop, so
           // the audit covers complete settlement without expensive repeated
           // postflop range enumeration.
@@ -420,12 +451,13 @@ describe("playable hand loop", () => {
           if (state.policyDecisions.some((record) => record.decision.facts.fallback))
             failures.push(`策略降级: seed ${seed}, players ${playerCount}`);
           policyDecisions += state.policyDecisions.length;
-        }
       }
       expect(failures).toEqual([]);
-      expect(policyDecisions).toBeGreaterThanOrEqual(2_000);
+      expect(policyDecisions).toBeGreaterThanOrEqual(
+        Math.floor((lastSeed - firstSeed + 1) / 2),
+      );
     },
-    120_000,
+    30_000,
   );
 
   it("uses heads-up blind and action order when two stacks are supplied", () => {
