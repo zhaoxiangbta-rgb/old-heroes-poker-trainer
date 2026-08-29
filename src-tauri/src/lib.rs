@@ -60,6 +60,11 @@ fn save_hand(db: tauri::State<Db>, json: String) -> Result<bool, String> {
 }
 
 #[tauri::command]
+fn replace_hand(db: tauri::State<Db>, json: String) -> Result<(), String> {
+    storage::replace(&*lock_db(&db)?, &json).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn list_hands(db: tauri::State<Db>) -> Result<Vec<String>, String> {
     storage::list(&*lock_db(&db)?).map_err(|_| "读取历史牌局失败".into())
 }
@@ -197,6 +202,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             save_hand,
+            replace_hand,
             list_hands,
             clear_hands,
             get_model_settings,

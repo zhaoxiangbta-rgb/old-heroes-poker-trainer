@@ -26,8 +26,9 @@ export function mobileBetPresetTarget(
   const ratio =
     preset === "half-pot" ? 0.5 : preset === "two-thirds-pot" ? 2 / 3 : 1;
   const hero = game.players[game.heroSeat];
+  const potAfterCall = game.pot + game.legal.callAmount;
   return clampMobileBet(
-    hero.streetBet + game.legal.callAmount + game.pot * ratio,
+    hero.streetBet + game.legal.callAmount + potAfterCall * ratio,
     bounds,
   );
 }

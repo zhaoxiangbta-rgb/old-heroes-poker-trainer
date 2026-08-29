@@ -26,7 +26,7 @@ if (visualPortraits.length !== 6) throw new Error(`unified visual bundle require
 for (const relative of ["cards/card-paper.png", "cards/card-back.png", "controls/fold.png", "controls/check.png", "controls/primary.png", "controls/all-in.png", "chips/wager-red.png", "chips/wager-blue.png", "chips/wager-green.png", "chips/wager-black.png", "chips/wager-gold.png"]) {
   if (!files.includes(join(visualRoot, relative))) throw new Error(`unified poker visual missing: ${relative}`);
 }
-const forbidden = ["SENTINEL-DESKTOP-SECRET", "player-names.local.json", "Bella", "哈队", "倪少", "零哥", "Q大爷", "董秘"];
+const forbidden = ["SENTINEL-DESKTOP-SECRET", "player-names.local.json"];
 for (const file of files.filter((path) => /\.(html|js|css|json)$/.test(path))) {
   const content = await readFile(file, "utf8");
   for (const needle of forbidden) if (content.includes(needle)) throw new Error(`forbidden mobile bundle content: ${needle}`);

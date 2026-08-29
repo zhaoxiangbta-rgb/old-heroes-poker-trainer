@@ -163,13 +163,13 @@ describe("playable hand loop", () => {
     expect(replay.policyDecisions).toEqual(first.policyDecisions);
     expect(replay.log).toEqual(first.log);
   });
-  it("pins the table profile, player profiles and training target into a version-seven hand", () => {
+  it("pins the table profile, player profiles and training target into a version-eight hand", () => {
     const state = newGame(42, 1, undefined, undefined, {
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },
     });
     expect(state).toMatchObject({
-      version: 7,
+      version: 9,
       strategyVersion: "preflop-abstract-v1",
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },

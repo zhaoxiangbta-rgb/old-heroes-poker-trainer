@@ -77,7 +77,7 @@ describe("MobileFloatingControls", () => {
     expect(document.querySelector(".mobile-floating-presets")).not.toBeInTheDocument();
     fireEvent.change(screen.getByRole("slider"), { target: { value: "167" } });
     expect(onAction).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "加注到 24" })).toBeVisible();
   });
 
   it("keeps three stable action slots and disables unavailable actions", () => {
@@ -123,7 +123,7 @@ describe("MobileFloatingControls", () => {
     expect(document.querySelector(".mobile-action-zone")).toContainElement(screen.getByRole("button", { name: "弃牌" }));
     expect(screen.getByRole("button", { name: "过牌" })).toBeDisabled();
     fireEvent.click(within(sizeZone as HTMLElement).getByRole("button", { name: "半池" }));
-    expect(screen.getByRole("button", { name: "加注到 21" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "加注到 24" })).toBeVisible();
     expect(onAction).not.toHaveBeenCalled();
     expect(screen.getByTestId("mobile-horizontal-bet-rail")).toBeInTheDocument();
   });
