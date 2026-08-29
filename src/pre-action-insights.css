@@ -1,0 +1,61 @@
+.pre-action-insights {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  color: #d9ddd8;
+}
+.pre-action-insights__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pre-action-insights__heading h3 { margin: 0; }
+.pre-action-insights__heading span { color: #a89463; font-size: 12px; white-space: nowrap; }
+.pre-action-insights__paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.pre-action-insights__paths article {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #2c3b35;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #14211c, #0d1512);
+}
+.pre-action-insights__paths b { color: #ead59d; }
+.pre-action-insights__paths span { color: #8fa39a; font-size: 12px; }
+.pre-action-insights__paths strong { color: #f3f1e8; font-size: 13px; }
+.pre-action-insights__facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pre-action-insights__facts span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #18241f;
+  color: #b9c7bf;
+  font-size: 12px;
+}
+.pre-action-insights__facts span.risk { color: #e4a789; background: #2b1b18; }
+.pre-action-insights__warning,
+.pre-action-insights__loading { margin: 0; color: #b7a98b; line-height: 1.55; }
+.pre-action-insights__toggle {
+  min-height: 38px;
+  border: 1px solid #6f5b2f;
+  border-radius: 9px;
+  color: #e8cf90;
+  background: #171a15;
+  cursor: pointer;
+}
+.pre-action-insights__opponents { display: grid; gap: 10px; }
+.pre-action-insights__opponents article {
+  padding: 11px;
+  border: 1px solid #29352f;
+  border-radius: 10px;
+  background: #101714;
+}
+.pre-action-insights__opponents header { display: flex; justify-content: space-between; gap: 8px; }
+.pre-action-insights__opponents header span,
+.pre-action-insights__opponents small { color: #87978e; font-size: 11px; }
+.pre-action-insights__buckets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 9px 0; font-size: 12px; }
+.pre-action-insights__opponents p { margin: 7px 0 0; color: #c8d0cb; font-size: 12px; }

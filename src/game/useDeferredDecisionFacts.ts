@@ -51,6 +51,10 @@ function decisionInput(game: GameState): DecisionAnalysisInput | undefined {
     pot: game.pot,
     toCall: game.legal.callAmount,
     stack: game.players[game.heroSeat].stack,
+    streetBet: game.players[game.heroSeat].streetBet,
+    canRaise: game.legal.canRaise,
+    minRaiseTo: game.legal.minRaiseTo,
+    maxRaiseTo: game.legal.maxRaiseTo,
     playersBehind: game.pending.filter((seat) => seat !== game.heroSeat).length,
     seed: game.seed,
   };

@@ -43,7 +43,7 @@ function trendOf(assessments: DecisionAssessment[]): WeaknessTrend {
 }
 
 export function summarizeWeaknesses(hands: GameState[]): WeaknessSummary[] {
-  const indexed = hands.flatMap((hand) =>
+  const indexed = hands.filter((hand) => hand.deepReviewStatus === "completed").flatMap((hand) =>
     hand.assessments
       .filter((assessment) => assessment.scored)
       .map((assessment) => ({

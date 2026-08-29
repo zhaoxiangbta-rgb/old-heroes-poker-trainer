@@ -12,6 +12,11 @@ import type {
   DecisionAssessment,
   TrainingTarget,
 } from "../training/types";
+import type {
+  DeepDecisionInput,
+  DeepHandReview,
+  DeepReviewStatus,
+} from "../review/types";
 import {
   DEFAULT_PLAYER_PROFILES,
   effectivePlayerProfile,
@@ -117,7 +122,7 @@ export type StrategyDecisionRecord = {
   result: StrategyResult;
 };
 export type GameState = {
-  version: 7;
+  version: 9;
   strategyVersion: string;
   seed: number;
   rng: number;
@@ -149,6 +154,10 @@ export type GameState = {
   trainingTarget: TrainingTarget;
   assessments: DecisionAssessment[];
   assessmentStatus: AssessmentStatus;
+  reviewDecisionInputs: DeepDecisionInput[];
+  deepReviewStatus: DeepReviewStatus;
+  deepReview?: DeepHandReview;
+  deepReviewError?: string;
 };
 export type NewGameOptions = {
   tableProfileId?: TableProfileId;
@@ -738,7 +747,7 @@ export function newGame(
     },
   );
   const s: GameState = {
-    version: 7,
+    version: 9,
     strategyVersion: "preflop-abstract-v1",
     seed,
     rng: shuffledDeck.rng,
@@ -769,6 +778,8 @@ export function newGame(
     trainingTarget: options.trainingTarget ?? { mode: "none" },
     assessments: [],
     assessmentStatus: "ready",
+    reviewDecisionInputs: [],
+    deepReviewStatus: "not-started",
   };
   const firstToDeal = playerCount === 2 ? button : (button + 1) % playerCount;
   for (let n = 0; n < 2; n++)
@@ -787,11 +798,12 @@ export function act(state: GameState, action: GameAction): GameState {
 export function normalizeGameState(state: GameState): GameState {
   const raw = structuredClone(state) as unknown as Record<string, unknown>;
   if (raw.version === 6) {
-    raw.version = 7;
+    raw.version = 9;
     raw.strategyVersion = "legacy-v6";
     raw.strategyDecisions = [];
   }
-  if (raw.version !== 7) throw new Error("牌局数据版本不兼容");
+  if (raw.version === 7 || raw.version === 8) raw.version = 9;
+  if (raw.version !== 9) throw new Error("牌局数据版本不兼容");
   const s = raw as GameState & {
     raiseToReopen?: number[];
     policyDecisions?: PolicyDecisionRecord[];
@@ -802,6 +814,10 @@ export function normalizeGameState(state: GameState): GameState {
     assessmentStatus?: AssessmentStatus;
     playerProfiles?: PlayerProfile[];
     friendBankrolls?: FriendBankroll[];
+    reviewDecisionInputs?: DeepDecisionInput[];
+    deepReviewStatus?: DeepReviewStatus;
+    deepReview?: DeepHandReview;
+    deepReviewError?: string;
   };
   if (!(["balanced", "friends", "loose-wild"] as string[]).includes(s.tableProfileId ?? ""))
     s.tableProfileId = "balanced";
@@ -865,6 +881,11 @@ export function normalizeGameState(state: GameState): GameState {
       : s.strategyVersion !== "legacy-v6",
   }));
   s.assessmentStatus ??= "ready";
+  if (!Array.isArray(s.reviewDecisionInputs)) s.reviewDecisionInputs = [];
+  s.deepReviewStatus ??= "not-started";
+  if (s.deepReview && (!s.deepReview.stateHash || s.deepReview.status !== "completed"))
+    s.deepReview = undefined;
+  if (s.deepReviewStatus !== "failed") s.deepReviewError = undefined;
   return sync(s as GameState);
 }
 export function isHeroTurn(state: GameState) {

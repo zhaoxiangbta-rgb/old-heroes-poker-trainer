@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {analyzeDecision,classifyIntent} from './analysis';
+import {analyzeDecision,classifyIntent,type DecisionAnalysisInput} from './analysis';
 import {buildWeightedRange,removeBlocked} from './ranges';
 
 describe('decision facts',()=>{
@@ -24,5 +24,25 @@ describe('decision facts',()=>{
     expect(analyzeDecision({...base,playersBehind:2}).risk.playersBehind).toBe(2);
     expect(analyzeDecision({...base,playersBehind:2}).alternatives.find(x=>x.kind==='raise')!.ev)
       .toBeLessThan(analyzeDecision({...base,playersBehind:0}).alternatives.find(x=>x.kind==='raise')!.ev);
+  });
+  it('never proposes a raise outside the rules-engine bounds',()=>{
+    const range=removeBlocked(buildWeightedRange('AA,KK,QQ,JJ,TT,AKs,AQs,AKo'),['As','Kd','2c','7d','9h']);
+    const input={
+      hero:['As','Kd'],board:['2c','7d','9h'],range,pot:30,toCall:10,stack:96,
+      streetBet:4,canRaise:true,minRaiseTo:40,maxRaiseTo:55,playersBehind:0,seed:1,
+    } as DecisionAnalysisInput & {
+      streetBet:number;canRaise:boolean;minRaiseTo:number;maxRaiseTo:number;
+    };
+    const raises=analyzeDecision(input).alternatives.filter(x=>x.kind==='raise');
+    expect(raises.length).toBeGreaterThan(0);
+    expect(raises.every(x=>x.amount>=40&&x.amount<=55)).toBe(true);
+  });
+  it('returns a broad flop-range comparison within an interactive budget',()=>{
+    const range=removeBlocked(buildWeightedRange(
+      'AA,KK,QQ,JJ,TT,99,88,77,66,55,44,33,22,AKs,AQs,AJs,ATs,KQs,KJs,KTs,QJs,QTs,JTs,T9s,98s,87s,AKo,AQo,AJo,KQo,KJo,QJo',
+    ),['Ah','Kh','Qh','Jh','2c']);
+    const started=performance.now();
+    analyzeDecision({hero:['Ah','Kh'],board:['Qh','Jh','2c'],range,pot:30,toCall:10,stack:120,playersBehind:0,seed:7});
+    expect(performance.now()-started).toBeLessThan(750);
   });
 });

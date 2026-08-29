@@ -44,6 +44,10 @@ export function createNativeRepository(): DesktopRepository {
       safely("write", "本手未保存", async () => {
         await invoke("save_hand", { json: JSON.stringify(hand) });
       }),
+    replaceHand: (hand) =>
+      safely("write", "精算结果未保存", async () => {
+        await invoke("replace_hand", { json: JSON.stringify(hand) });
+      }),
     exportHands: () =>
       safely("export", "导出历史牌局失败", async () => {
         const result = await invoke<{ cancelled: boolean; exported: number }>("export_hands");

@@ -25,6 +25,20 @@ describe("memory desktop repository", () => {
     expect((await repository.loadHands()).map((hand) => hand.seed)).toEqual([2, 1]);
   });
 
+  it("replaces the same hand after deep review state changes", async () => {
+    const repository = createMemoryRepository();
+    const first = completed(7);
+    await repository.saveHand(first);
+
+    const reviewed = structuredClone(first);
+    reviewed.deepReviewStatus = "cancelled";
+    await repository.replaceHand(reviewed);
+
+    const rows = await repository.loadHands();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].deepReviewStatus).toBe("cancelled");
+  });
+
   it("clears hands without clearing settings and never stores the API key", async () => {
     const repository = createMemoryRepository();
     await repository.saveHand(completed(1));

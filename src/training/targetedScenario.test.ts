@@ -61,7 +61,7 @@ describe("targeted full-hand generation", () => {
       () => false,
     );
     expect(result).toMatchObject({ matched: false, attempts: 24 });
-    expect(result.game.version).toBe(7);
+    expect(result.game.version).toBe(9);
     expect(new Set(result.game.players.flatMap((player) => player.hole)).size).toBe(
       result.game.players.length * 2,
     );

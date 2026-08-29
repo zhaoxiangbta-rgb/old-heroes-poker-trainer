@@ -3,6 +3,8 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame } from "./game";
 import { formatReceipt, useGamePlayback } from "./useGamePlayback";
+import { buildPreActionInsightInput, preActionInsightHash } from "../insights/snapshot";
+import type { PreActionInsightState } from "../insights/types";
 
 describe("useGamePlayback", () => {
   beforeEach(() => vi.useFakeTimers());
@@ -51,7 +53,7 @@ describe("useGamePlayback", () => {
     expect(result.current.game.assessments).toHaveLength(0);
   });
 
-  it("paints the receipt before running assessment and playback planning", () => {
+  it("captures the hero input without calculating assessment during submit", () => {
     const initial = newGame(42);
     const { result } = renderHook(() => useGamePlayback(initial));
     act(() => result.current.submit({ type: "call" }));
@@ -59,18 +61,39 @@ describe("useGamePlayback", () => {
     expect(result.current.phase).toBe("submitting");
     expect(result.current.game.assessments).toHaveLength(0);
     act(() => vi.advanceTimersByTime(0));
-    expect(result.current.game.assessments).toHaveLength(1);
+    expect(result.current.game.assessments).toHaveLength(0);
+    expect(result.current.game.reviewDecisionInputs).toHaveLength(1);
+    expect(result.current.game.reviewDecisionInputs[0].actual).toEqual({ type: "call" });
   });
 
-  it("preserves one identical assessment through every playback frame", () => {
+  it("captures only a matching completed pre-action insight without full ranges", () => {
+    const initial = newGame(142);
+    const input = buildPreActionInsightInput(initial);
+    const insight: PreActionInsightState = {
+      key: { handNo: initial.handNo, seed: initial.seed, street: initial.street, logIndex: initial.log.length, stateHash: preActionInsightHash(input) },
+      status: "ready",
+      ranges: [{ seat: 1, playerId: "friend-01", comboCount: 2, buckets: { strongValue: 0.2, madeHand: 0.3, strongDraw: 0.1, weakDraw: 0.1, air: 0.3 }, changes: [], confidence: 0.6, ranges: [{ cards: ["Ah", "Kh"], weight: 1, label: "AKs", history: [] }] }],
+      responses: [],
+      confidence: 0.6,
+    };
+    const { result } = renderHook(() => useGamePlayback(initial));
+    act(() => result.current.submit({ type: "call" }, insight));
+    act(() => vi.advanceTimersByTime(0));
+    const saved = result.current.game.reviewDecisionInputs[0].preActionInsight!;
+    expect(saved.key.stateHash).toBe(insight.key!.stateHash);
+    expect(saved.rangeSummaries?.[0]).not.toHaveProperty("ranges");
+    expect(JSON.stringify(saved)).not.toContain("Ah");
+  });
+
+  it("preserves one identical decision snapshot through every playback frame", () => {
     const initial = newGame(42);
     const { result } = renderHook(() => useGamePlayback(initial));
     act(() => result.current.submit({ type: "call" }));
     act(() => vi.advanceTimersByTime(0));
-    const assessment = result.current.game.assessments[0];
-    expect(assessment).toBeDefined();
+    const snapshot = result.current.game.reviewDecisionInputs[0];
+    expect(snapshot).toBeDefined();
     act(() => vi.runAllTimers());
-    expect(result.current.game.assessments).toEqual([assessment]);
+    expect(result.current.game.reviewDecisionInputs).toEqual([snapshot]);
   });
 
   it("keeps the previous chip effect alive as the next opponent starts thinking", () => {

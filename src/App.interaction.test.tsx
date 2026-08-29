@@ -254,6 +254,7 @@ function settledShowdownState() {
     winners: [state.players.find((player) => player.seat !== state.heroSeat)!.seat],
     summary: "青禾赢得 100 筹码",
   };
+  state.deepReviewStatus = "cancelled";
   return normalizeGameState(state);
 }
 
@@ -305,7 +306,9 @@ function reviewDetailState() {
     player.allIn = false;
     player.revealed = false;
   });
-  return advanceIfRoundComplete(state);
+  const reviewed = advanceIfRoundComplete(state);
+  reviewed.deepReviewStatus = "cancelled";
+  return reviewed;
 }
 
 function stubPlayback(

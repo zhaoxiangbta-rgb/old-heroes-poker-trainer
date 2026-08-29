@@ -211,7 +211,7 @@ fn collect_cards(value: &Value, out: &mut Vec<String>) {
 fn validate_hand(value: &Value) -> Result<(), StorageError> {
     hand_identity(value)?;
     let version = value.get("version").and_then(Value::as_i64);
-    if version != Some(7) || !value.get("log").is_some_and(Value::is_array) {
+    if version != Some(9) || !value.get("log").is_some_and(Value::is_array) {
         return Err(StorageError::InvalidDocument);
     }
     if !value.get("policyDecisions").is_some_and(Value::is_array) {
@@ -254,6 +254,20 @@ fn validate_hand(value: &Value) -> Result<(), StorageError> {
             return Err(StorageError::InvalidDocument);
         }
     }
+    if let Some(decisions) = value.get("reviewDecisionInputs").and_then(Value::as_array) {
+        for decision in decisions {
+            let Some(insight) = decision.get("preActionInsight") else { continue };
+            let key = insight.get("key").ok_or(StorageError::InvalidDocument)?;
+            if insight.get("schemaVersion").and_then(Value::as_i64) != Some(1)
+                || key.get("stateHash").and_then(Value::as_str).is_none()
+                || key.get("handNo") != decision.get("handNo")
+                || key.get("logIndex") != decision.get("logIndex")
+                || key.get("street") != decision.get("street")
+            {
+                return Err(StorageError::InvalidDocument);
+            }
+        }
+    }
     let mut cards = Vec::new();
     collect_cards(value, &mut cards);
     let mut unique = HashSet::new();
@@ -270,12 +284,12 @@ fn validate_hand(value: &Value) -> Result<(), StorageError> {
     Ok(())
 }
 
-fn migrate_hand_to_v7(value: &Value) -> Result<Value, StorageError> {
+fn migrate_hand_to_v9(value: &Value) -> Result<Value, StorageError> {
     let mut migrated = value.clone();
     match migrated.get("version").and_then(Value::as_i64) {
         Some(6) => {
             let object = migrated.as_object_mut().ok_or(StorageError::InvalidDocument)?;
-            object.insert("version".into(), Value::from(7));
+            object.insert("version".into(), Value::from(9));
             object.insert("strategyVersion".into(), Value::from("legacy-v6"));
             object.insert("strategyDecisions".into(), Value::Array(Vec::new()));
             if let Some(assessments) = object.get_mut("assessments").and_then(Value::as_array_mut) {
@@ -286,11 +300,56 @@ fn migrate_hand_to_v7(value: &Value) -> Result<Value, StorageError> {
                 }
             }
         }
-        Some(7) => {}
+        Some(7) => {
+            migrated
+                .as_object_mut()
+                .ok_or(StorageError::InvalidDocument)?
+                .insert("version".into(), Value::from(9));
+        }
+        Some(8) => {
+            migrated
+                .as_object_mut()
+                .ok_or(StorageError::InvalidDocument)?
+                .insert("version".into(), Value::from(9));
+        }
+        Some(9) => {}
         _ => return Err(StorageError::InvalidDocument),
+    }
+    if let Some(object) = migrated.as_object_mut() {
+        object
+            .entry("reviewDecisionInputs")
+            .or_insert_with(|| Value::Array(Vec::new()));
+        object
+            .entry("deepReviewStatus")
+            .or_insert_with(|| Value::from("not-started"));
     }
     validate_hand(&migrated)?;
     Ok(migrated)
+}
+
+fn index_assessments(c: &Connection, value: &Value, hand_key: &str) -> Result<(), StorageError> {
+    if value.get("deepReviewStatus").and_then(Value::as_str) != Some("completed") {
+        return Ok(());
+    }
+    if let Some(assessments) = value.get("assessments").and_then(Value::as_array) {
+        for assessment in assessments {
+            c.execute(
+                "INSERT INTO decision_assessments(
+                   hand_key,assessment_id,street,severity,normalized_ev_loss,tags,snapshot
+                 ) VALUES(?1,?2,?3,?4,?5,?6,?7)",
+                params![
+                    hand_key,
+                    assessment["id"].as_str().unwrap(),
+                    assessment["street"].as_str().unwrap(),
+                    assessment["severity"].as_str().unwrap(),
+                    assessment["normalizedEvLoss"].as_f64().unwrap(),
+                    serde_json::to_string(&assessment["tags"])?,
+                    serde_json::to_string(assessment)?,
+                ],
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn insert_hand(c: &Connection, value: &Value, snapshot: &str) -> Result<bool, StorageError> {
@@ -300,36 +359,41 @@ fn insert_hand(c: &Connection, value: &Value, snapshot: &str) -> Result<bool, St
         params![&hand_key, seed, snapshot],
     )?;
     if changed == 1 {
-        if let Some(assessments) = value.get("assessments").and_then(Value::as_array) {
-            for assessment in assessments {
-                c.execute(
-                    "INSERT INTO decision_assessments(
-                       hand_key,assessment_id,street,severity,normalized_ev_loss,tags,snapshot
-                     ) VALUES(?1,?2,?3,?4,?5,?6,?7)",
-                    params![
-                        &hand_key,
-                        assessment["id"].as_str().unwrap(),
-                        assessment["street"].as_str().unwrap(),
-                        assessment["severity"].as_str().unwrap(),
-                        assessment["normalizedEvLoss"].as_f64().unwrap(),
-                        serde_json::to_string(&assessment["tags"])?,
-                        serde_json::to_string(assessment)?,
-                    ],
-                )?;
-            }
-        }
+        index_assessments(c, value, &hand_key)?;
     }
     Ok(changed == 1)
 }
 
 pub fn save(c: &Connection, snapshot: &str) -> Result<bool, StorageError> {
     let value: Value = serde_json::from_str(snapshot)?;
-    let value = migrate_hand_to_v7(&value)?;
+    let value = migrate_hand_to_v9(&value)?;
     let snapshot = serde_json::to_string(&value)?;
     let transaction = c.unchecked_transaction()?;
     let changed = insert_hand(&transaction, &value, &snapshot)?;
     transaction.commit()?;
     Ok(changed)
+}
+
+pub fn replace(c: &Connection, snapshot: &str) -> Result<(), StorageError> {
+    let value: Value = serde_json::from_str(snapshot)?;
+    let value = migrate_hand_to_v9(&value)?;
+    let snapshot = serde_json::to_string(&value)?;
+    let (seed, _, hand_key) = hand_identity(&value)?;
+    let transaction = c.unchecked_transaction()?;
+    let changed = transaction.execute(
+        "UPDATE hands SET seed=?2,snapshot=?3 WHERE hand_key=?1",
+        params![&hand_key, seed, snapshot],
+    )?;
+    if changed != 1 {
+        return Err(StorageError::InvalidDocument);
+    }
+    transaction.execute(
+        "DELETE FROM decision_assessments WHERE hand_key=?1",
+        params![&hand_key],
+    )?;
+    index_assessments(&transaction, &value, &hand_key)?;
+    transaction.commit()?;
+    Ok(())
 }
 
 pub fn list(c: &Connection) -> rusqlite::Result<Vec<String>> {
@@ -463,7 +527,7 @@ pub fn export_document(c: &Connection, exported_at: &str) -> Result<String, Stor
         .iter()
         .map(|snapshot| {
             let value: Value = serde_json::from_str(snapshot)?;
-            migrate_hand_to_v7(&value)
+            migrate_hand_to_v9(&value)
         })
         .collect::<Result<_, _>>()?;
     if hands.iter().any(contains_sensitive_key) {
@@ -472,7 +536,7 @@ pub fn export_document(c: &Connection, exported_at: &str) -> Result<String, Stor
     let gameplay_settings = load_gameplay_settings(c)?;
     Ok(serde_json::to_string_pretty(&serde_json::json!({
         "format": "poker-decision-trainer",
-        "version": 7,
+        "version": 9,
         "exportedAt": exported_at,
         "gameplaySettings": gameplay_settings,
         "hands": hands
@@ -483,7 +547,7 @@ pub fn import_document(c: &mut Connection, document: &str) -> Result<ImportSumma
     let root: Value = serde_json::from_str(document)?;
     let version = root.get("version").and_then(Value::as_i64);
     if root.get("format").and_then(Value::as_str) != Some("poker-decision-trainer")
-        || !matches!(version, Some(6 | 7))
+        || !matches!(version, Some(6 | 7 | 8 | 9))
         || contains_sensitive_key(&root)
     {
         return Err(StorageError::InvalidDocument);
@@ -494,7 +558,7 @@ pub fn import_document(c: &mut Connection, document: &str) -> Result<ImportSumma
         .ok_or(StorageError::InvalidDocument)?;
     let hands: Vec<Value> = raw_hands
         .iter()
-        .map(migrate_hand_to_v7)
+        .map(migrate_hand_to_v9)
         .collect::<Result<_, _>>()?;
     let gameplay_settings = {
         let settings: GameplaySettings = serde_json::from_value(
@@ -546,7 +610,7 @@ mod tests {
 
     fn hand(seed: i64, hand_no: i64) -> String {
         serde_json::json!({
-            "version": 7,
+            "version": 9,
             "strategyVersion": "legacy-adapter-v1",
             "seed": seed,
             "handNo": hand_no,
@@ -562,6 +626,8 @@ mod tests {
             "tableProfileId": "friends",
             "trainingTarget": { "mode": "none" },
             "assessmentStatus": "ready",
+            "deepReviewStatus": "completed",
+            "reviewDecisionInputs": [],
             "assessments": [{
                 "id": format!("{hand_no}:0"),
                 "street": "preflop",
@@ -594,6 +660,28 @@ mod tests {
         let malformed = hand(8, 1).replace(r#""id":"1:0","#, "");
         assert!(save(&c, &malformed).is_err());
         assert_eq!(list(&c).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn replaces_a_saved_hand_and_rebuilds_assessment_rows() {
+        let c = Connection::open_in_memory().unwrap();
+        migrate(&c).unwrap();
+        assert!(save(&c, &hand(17, 1)).unwrap());
+
+        let mut reviewed: Value = serde_json::from_str(&hand(17, 1)).unwrap();
+        reviewed["version"] = Value::from(9);
+        reviewed["deepReviewStatus"] = Value::from("cancelled");
+        reviewed["assessments"] = Value::Array(Vec::new());
+        replace(&c, &reviewed.to_string()).unwrap();
+
+        let rows = list(&c).unwrap();
+        assert_eq!(rows.len(), 1);
+        let restored: Value = serde_json::from_str(&rows[0]).unwrap();
+        assert_eq!(restored["deepReviewStatus"], Value::from("cancelled"));
+        let assessments: i64 = c
+            .query_row("SELECT COUNT(*) FROM decision_assessments", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(assessments, 0);
     }
 
     #[test]
@@ -677,7 +765,7 @@ mod tests {
             .collect();
         serde_json::json!({
             "format": "poker-decision-trainer",
-            "version": 7,
+            "version": 9,
             "exportedAt": "2026-08-19T00:00:00Z",
             "gameplaySettings": GameplaySettings::default(),
             "hands": values
@@ -711,7 +799,7 @@ mod tests {
     }
 
     #[test]
-    fn imports_v6_hands_as_unscored_v7_history() {
+    fn imports_v6_hands_as_unscored_v9_history() {
         let mut c = Connection::open_in_memory().unwrap();
         migrate(&c).unwrap();
         let mut legacy: Value = serde_json::from_str(&hand(15, 1)).unwrap();
@@ -724,7 +812,7 @@ mod tests {
 
         import_document(&mut c, &legacy_document.to_string()).unwrap();
         let restored: Value = serde_json::from_str(&list(&c).unwrap()[0]).unwrap();
-        assert_eq!(restored["version"], Value::from(7));
+        assert_eq!(restored["version"], Value::from(9));
         assert_eq!(restored["strategyVersion"], Value::from("legacy-v6"));
         assert_eq!(restored["strategyDecisions"], Value::Array(Vec::new()));
         assert_eq!(restored["assessments"][0]["scored"], Value::Bool(false));
@@ -756,7 +844,7 @@ mod tests {
     }
 
     #[test]
-    fn v7_export_import_round_trips_profiles_atomically_without_secrets() {
+    fn v9_export_import_round_trips_profiles_atomically_without_secrets() {
         let c = Connection::open_in_memory().unwrap();
         migrate(&c).unwrap();
         let mut settings = GameplaySettings::default();
@@ -764,7 +852,7 @@ mod tests {
         save_gameplay_settings(&c, &settings).unwrap();
         save(&c, &hand(61, 1)).unwrap();
         let exported = export_document(&c, "2026-08-21T00:00:00Z").unwrap();
-        assert!(exported.contains(r#""version": 7"#));
+        assert!(exported.contains(r#""version": 9"#));
         assert!(!exported.to_lowercase().contains("credential"));
 
         let mut restored = Connection::open_in_memory().unwrap();
@@ -781,7 +869,7 @@ mod tests {
     }
 
     #[test]
-    fn exports_clears_and_restores_v7_training_facts_exactly() {
+    fn exports_clears_and_restores_v9_training_facts_exactly() {
         let mut c = Connection::open_in_memory().unwrap();
         migrate(&c).unwrap();
         let original: Value = serde_json::from_str(&hand(31, 7)).unwrap();
