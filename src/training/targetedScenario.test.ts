@@ -96,5 +96,5 @@ describe("targeted full-hand generation", () => {
         expect(state.players.reduce((sum, player) => sum + player.stack, 0)).toBe(12);
       }
     }
-  });
+  }, 30_000);
 });

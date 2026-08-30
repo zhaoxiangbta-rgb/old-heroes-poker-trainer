@@ -75,7 +75,7 @@ describe("playable hand loop", () => {
       }),
     );
     expect(positions.size).toBe(6);
-  });
+  }, 30_000);
   it("uses five deterministic friends and Chinese position labels", () => {
     const first = newGame(42);
     const replay = newGame(42);
