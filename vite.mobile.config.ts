@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const appVersion = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")).version as string;
 
@@ -26,6 +27,14 @@ function inlineMobileEntry() {
 
 export default defineConfig({
   plugins: [react(), inlineMobileEntry()],
+  resolve: {
+    alias: [
+      { find: "./ai/useAiLiveCoach", replacement: resolve("src/mobile/noAiLiveCoach.ts") },
+      { find: "./ai/useAiHandReview", replacement: resolve("src/mobile/noAiHandReview.ts") },
+      { find: "./components/AiLiveCoach", replacement: resolve("src/mobile/NoAiLiveCoach.tsx") },
+      { find: "./components/SettingsPage", replacement: resolve("src/mobile/MobileSettingsPage.tsx") },
+    ],
+  },
   publicDir: false,
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),

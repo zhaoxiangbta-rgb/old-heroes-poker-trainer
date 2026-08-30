@@ -93,5 +93,9 @@ export function createNativeRepository(): DesktopRepository {
           model: settings.model,
         }),
       ),
+    generateAiExplanation: (request) =>
+      safely("connection", "AI 解析失败，已保留本地结果", () =>
+        invoke("generate_ai_explanation", { request }),
+      ),
   };
 }

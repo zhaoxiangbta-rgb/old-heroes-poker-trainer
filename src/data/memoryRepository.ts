@@ -8,8 +8,11 @@ import type {
 import { normalizeGameplaySettings } from "../ui/tableThemes";
 
 const DEFAULT_SETTINGS: ModelSettings = {
-  baseUrl: "http://127.0.0.1:8317",
-  model: "gpt-local",
+  // Browser preview is also part of the mobile bundle, so it must not embed a
+  // developer's private LAN address. Native defaults live in Rust storage.
+  baseUrl: "http://localhost:8081/v1/chat/completions",
+  model: "Qwen3.5-9B-Q8",
+  enabled: false,
 };
 
 export function createMemoryRepository(): DesktopRepository {
@@ -60,6 +63,9 @@ export function createMemoryRepository(): DesktopRepository {
       // Browser preview deliberately does not retain secrets, even in memory.
     },
     async testModelConnection(): Promise<ConnectionResult> {
+      throw new Error("开发预览不连接外部模型");
+    },
+    async generateAiExplanation() {
       throw new Error("开发预览不连接外部模型");
     },
   };

@@ -14,6 +14,7 @@ export function SettingsPage({
   soundEnabled,
   currentHandProfileId = "balanced",
   onGameplaySettingsChange,
+  onModelSettingsChange,
   setSoundEnabled,
   hideModel = false,
 }: {
@@ -21,10 +22,11 @@ export function SettingsPage({
   soundEnabled: boolean;
   currentHandProfileId?: TableProfileId;
   onGameplaySettingsChange?: (settings: GameplaySettings) => void;
+  onModelSettingsChange?: (settings: ModelSettings) => void;
   setSoundEnabled: (enabled: boolean) => void;
   hideModel?: boolean;
 }) {
-  const [settings, setSettings] = useState<ModelSettings>({ baseUrl: "", model: "" });
+  const [settings, setSettings] = useState<ModelSettings>({ baseUrl: "", model: "", enabled: false });
   const [gameplay, setGameplay] = useState<GameplaySettings>(() => normalizeGameplaySettings({}));
   const [apiKey, setApiKey] = useState("");
   const [hasKey, setHasKey] = useState(false);
@@ -87,10 +89,14 @@ export function SettingsPage({
     setBusy("settings");
     setNotice("");
     try {
-      await repository.saveModelSettings({
+      const next = {
         baseUrl: settings.baseUrl.trim(),
         model: settings.model.trim(),
-      });
+        enabled: settings.enabled,
+      };
+      await repository.saveModelSettings(next);
+      setSettings(next);
+      onModelSettingsChange?.(next);
       setNotice("模型设置已保存");
     } catch {
       setNotice("保存模型设置失败");
@@ -179,13 +185,14 @@ export function SettingsPage({
             <div><b>OpenAI-compatible 模型</b><small>只用于中文解释；不会改变本地规则结论。</small></div>
             <span className={hasKey ? "key-saved" : "key-missing"}>密钥状态：{hasKey ? "已保存" : "未配置"}</span>
           </div>
+          <label className="setting-row ai-enable"><span><b>启用 AI 盘中解读与整手复盘</b><small>开启后 AI 负责讲解，本地 Solver 仍负责所有事实与决策。</small></span><input aria-label="启用 AI 解读" type="checkbox" disabled={disabled} checked={settings.enabled} onChange={(event) => setSettings({ ...settings, enabled: event.target.checked })} /></label>
           <label>Base URL<input aria-label="Base URL" disabled={disabled} value={settings.baseUrl} onChange={(event) => setSettings({ ...settings, baseUrl: event.target.value })} /></label>
           <label>模型名<input aria-label="模型名" disabled={disabled} value={settings.model} onChange={(event) => setSettings({ ...settings, model: event.target.value })} /></label>
           <div className="settings-actions">
             <button disabled={disabled} onClick={() => void saveSettings()}>{busy === "settings" ? "正在保存…" : "保存模型设置"}</button>
             <button disabled={disabled} onClick={() => void testConnection()}>{busy === "connection" ? "连接中…" : "测试连接"}</button>
           </div>
-          <label>API Key<input aria-label="API Key" autoComplete="new-password" disabled={disabled} type="password" value={apiKey} placeholder="保存后立即清空，不回显" onChange={(event) => setApiKey(event.target.value)} /></label>
+          <label>API Key（可选）<input aria-label="API Key" autoComplete="new-password" disabled={disabled} type="password" value={apiKey} placeholder="本地 Qwen 无需密钥可留空" onChange={(event) => setApiKey(event.target.value)} /></label>
           <button className="save-key" disabled={disabled} onClick={() => void saveKey()}>{busy === "key" ? "正在写入凭据库…" : "保存 API Key"}</button>
         </section> : null}
 

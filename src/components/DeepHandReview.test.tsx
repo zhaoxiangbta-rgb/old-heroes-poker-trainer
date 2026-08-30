@@ -193,4 +193,14 @@ describe("DeepHandReviewView", () => {
     expect(screen.getByText(/旧版复盘/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "使用 V4 重新精算" })).toBeInTheDocument();
   });
+
+  it("uses a guarded AI review as primary prose and keeps local evidence collapsible", () => {
+    const game = newGame(42); game.phase = "review";
+    const local = wholeHandReview();
+    render(<DeepHandReviewView game={game} review={local} aiStatus="completed" aiReview={{ version: 1, factsVersion: 1, stateHash: local.stateHash, model: "Qwen3.5-9B-Q8", elapsedMs: 700, summary: "河牌的对手行动已把范围压到强价值。", streets: [{ street: "river", analysis: "你需要27.3%胜率，但本地权益不足，应弃牌。" }], turningPoint: "河牌面对加注到130。", keyLesson: "被动局的河牌大加注优先尊重价值。" }} onRecalculate={vi.fn()} onNextHand={vi.fn()} />);
+    expect(screen.getByText("AI 整手复盘 · 本地事实审核通过")).toBeVisible();
+    expect(screen.getByText(/27.3%胜率/)).toBeVisible();
+    expect(screen.getByText("查看本地 Solver 数字与范围依据")).toBeVisible();
+    expect(screen.queryByText("最终范围")).not.toBeInTheDocument();
+  });
 });

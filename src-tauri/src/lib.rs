@@ -117,6 +117,16 @@ fn test_ai(base_url: String, model: String) -> Result<ai::ConnectionResult, Stri
 }
 
 #[tauri::command]
+fn generate_ai_explanation(
+    db: tauri::State<Db>,
+    request: ai::GenerationRequest,
+) -> Result<ai::GenerationResult, String> {
+    let settings = storage::load_model_settings(&*lock_db(&db)?)
+        .map_err(|_| "读取模型设置失败".to_string())?;
+    ai::generate(&settings, keychain::get().ok(), request)
+}
+
+#[tauri::command]
 fn export_hands(app: tauri::AppHandle, db: tauri::State<Db>) -> Result<ExportResult, String> {
     let Some(selected) = app
         .dialog()
@@ -212,6 +222,7 @@ pub fn run() {
             set_api_key,
             has_api_key,
             test_ai,
+            generate_ai_explanation,
             export_hands,
             import_hands
             ,get_lan_mobile_status

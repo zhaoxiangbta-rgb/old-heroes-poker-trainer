@@ -8,6 +8,18 @@ export type RepositoryMode = "native" | "preview" | "mobile";
 export type ModelSettings = {
   baseUrl: string;
   model: string;
+  enabled: boolean;
+};
+
+export type AiGenerationRequest = {
+  kind: "live" | "review";
+  facts: Record<string, unknown>;
+};
+
+export type AiGenerationResult = {
+  content: string;
+  model: string;
+  elapsedMs: number;
 };
 
 export type GameplaySettings = {
@@ -49,6 +61,7 @@ export interface DesktopRepository {
   hasApiKey(): Promise<boolean>;
   saveApiKey(value: string): Promise<void>;
   testModelConnection(settings: ModelSettings): Promise<ConnectionResult>;
+  generateAiExplanation(request: AiGenerationRequest): Promise<AiGenerationResult>;
 }
 
 export interface MobileRepository extends DesktopRepository {

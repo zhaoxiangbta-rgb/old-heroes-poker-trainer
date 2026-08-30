@@ -136,11 +136,12 @@ export function createIndexedDbRepository({
       if (!file) return { cancelled: true, imported: 0, skipped: 0 };
       return repository.importDocument(await file.text());
     },
-    async loadModelSettings() { return { baseUrl: "", model: "" }; },
+    async loadModelSettings() { return { baseUrl: "", model: "", enabled: false }; },
     async saveModelSettings() {},
     async hasApiKey() { return false; },
     async saveApiKey() {},
     async testModelConnection() { throw new Error("移动版完全离线"); },
+    async generateAiExplanation() { throw new Error("移动版完全离线"); },
   };
   return repository;
 }

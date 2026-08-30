@@ -27,13 +27,16 @@ pub enum StorageError {
 pub struct ModelSettings {
     pub base_url: String,
     pub model: String,
+    #[serde(default)]
+    pub enabled: bool,
 }
 
 impl Default for ModelSettings {
     fn default() -> Self {
         Self {
-            base_url: "http://127.0.0.1:8317".into(),
-            model: "gpt-local".into(),
+            base_url: "http://192.168.120.86:8081/v1/chat/completions".into(),
+            model: "Qwen3.5-9B-Q8".into(),
+            enabled: false,
         }
     }
 }
@@ -691,6 +694,7 @@ mod tests {
         let expected = ModelSettings {
             base_url: "http://127.0.0.1:8317".into(),
             model: "gpt-local".into(),
+            enabled: true,
         };
         save_model_settings(&c, &expected).unwrap();
         let gameplay = GameplaySettings {
@@ -841,6 +845,20 @@ mod tests {
         .unwrap();
         let settings = load_gameplay_settings(&c).unwrap();
         assert_eq!(settings.player_profiles, default_player_profiles());
+    }
+
+    #[test]
+    fn defaults_legacy_model_settings_to_ai_disabled() {
+        let c = Connection::open_in_memory().unwrap();
+        migrate(&c).unwrap();
+        c.execute(
+            "INSERT INTO settings(key,value) VALUES('model',?1)",
+            [r#"{"baseUrl":"http://192.168.120.86:8081/v1/chat/completions","model":"Qwen3.5-9B-Q8"}"#],
+        )
+        .unwrap();
+        let settings = load_model_settings(&c).unwrap();
+        assert!(!settings.enabled);
+        assert_eq!(settings.model, "Qwen3.5-9B-Q8");
     }
 
     #[test]

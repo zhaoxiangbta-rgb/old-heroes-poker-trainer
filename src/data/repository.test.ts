@@ -106,7 +106,7 @@ describe("memory desktop repository", () => {
   it("clears hands without clearing settings and never stores the API key", async () => {
     const repository = createMemoryRepository();
     await repository.saveHand(completed(1));
-    await repository.saveModelSettings({ baseUrl: "http://localhost:9000", model: "local" });
+    await repository.saveModelSettings({ baseUrl: "http://localhost:9000", model: "local", enabled: true });
     await repository.saveApiKey("SENTINEL-DESKTOP-SECRET");
     expect(await repository.hasApiKey()).toBe(false);
     await repository.clearHands();
@@ -114,8 +114,17 @@ describe("memory desktop repository", () => {
     expect(await repository.loadModelSettings()).toEqual({
       baseUrl: "http://localhost:9000",
       model: "local",
+      enabled: true,
     });
     expect(JSON.stringify(repository)).not.toContain("SENTINEL-DESKTOP-SECRET");
+  });
+
+  it("keeps AI generation disabled in browser preview mode", async () => {
+    const repository = createMemoryRepository();
+    await expect(repository.generateAiExplanation({
+      kind: "live",
+      facts: { version: 1, stateHash: "preview" },
+    })).rejects.toThrow("开发预览不连接外部模型");
   });
 
   it("round-trips gameplay settings separately and preserves them when history is cleared", async () => {
@@ -141,8 +150,9 @@ describe("memory desktop repository", () => {
       playerProfiles: DEFAULT_PLAYER_PROFILES,
     });
     expect(await repository.loadModelSettings()).toEqual({
-      baseUrl: "http://127.0.0.1:8317",
-      model: "gpt-local",
+      baseUrl: "http://localhost:8081/v1/chat/completions",
+      model: "Qwen3.5-9B-Q8",
+      enabled: false,
     });
   });
 

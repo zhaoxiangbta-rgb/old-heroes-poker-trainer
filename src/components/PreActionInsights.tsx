@@ -10,12 +10,11 @@ function responseLabel(response: OpponentActionResponse) {
   return response.heroAction.type === "raise" ? `你下注到 ${response.heroAction.to}` : response.heroAction.type;
 }
 
-export function PreActionInsights({ state, game }: { state: PreActionInsightState; game: GameState }) {
+export function PreActionInsights({ state, game, aiPrimary = false }: { state: PreActionInsightState; game: GameState; aiPrimary?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   if (state.liveCoach) {
     const coach = state.liveCoach;
-    return (
-      <section className="pre-action-insights pre-action-coach" aria-label="下注前分析">
+    const content = <section className="pre-action-insights pre-action-coach" aria-label="下注前分析">
         <header className="pre-action-coach__header">
           <div><span>现场判断</span><b>{coach.strategy.label} 策略</b></div>
           <span className={coach.strategy.degraded ? "is-degraded" : "is-ready"}>
@@ -61,8 +60,8 @@ export function PreActionInsights({ state, game }: { state: PreActionInsightStat
             );
           })}
         </div> : <p className="pre-action-coach__empty">暂无可估计的存活对手范围。</p>}
-      </section>
-    );
+      </section>;
+    return aiPrimary ? <details className="local-facts-disclosure"><summary>查看本地牌型、范围与计算依据</summary>{content}</details> : content;
   }
   if (state.analysis) {
     return (

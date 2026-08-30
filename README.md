@@ -2,6 +2,22 @@
 
 离线 macOS / Windows 德州扑克决策训练应用。所有扑克事实由本地 TypeScript 规则引擎计算；模型连接是可选解释层，失败不影响训练。仅使用虚拟筹码。
 
+### 1.6.0 本地 Qwen 教练
+
+- 桌面版可在“设置”中启用 OpenAI-compatible 解读；默认配置为 `http://192.168.120.86:8081/v1/chat/completions` 与 `Qwen3.5-9B-Q8`，该本地服务不要求 API Key。
+- AI 启用后负责盘中中文讲解和整手复盘；发牌、对手决策、合法动作、范围、权益、EV、评分和结算仍只由本地规则/Solver 决定。
+- 发给模型的是版本化结构事实包。返回内容必须通过状态哈希、推荐动作、数字白名单、未知底牌与结构校验；任一冲突都整份丢弃并回退本地分析。
+- 盘中 AI 不阻塞操作按钮，整手 AI 复盘只在本地精算完成后启动。连接失败、超时、关闭服务或未启用 AI 时，应用仍可完整单机训练。
+- 手机 PWA 继续完全离线，不主动访问局域网模型服务。
+
+真实服务契约验证：
+
+```bash
+npm run verify:local-ai
+```
+
+可用 `LOCAL_AI_URL` 和 `LOCAL_AI_MODEL` 临时覆盖验证目标。连接其他需鉴权的服务时，API Key 仅保存在 macOS Keychain，不写入 SQLite、日志或导出文件。
+
 ## 手机独立离线版（PWA）
 
 固定地址：[https://zhaoxiangbta-rgb.github.io/old-heroes-poker-trainer/](https://zhaoxiangbta-rgb.github.io/old-heroes-poker-trainer/)
@@ -138,7 +154,7 @@ Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗�
 - 清空历史需要二次确认，只清除牌局；Base URL、模型名和 Keychain 密钥保留。
 - 浏览器直接打开只用于开发预览，明确显示“开发预览 · 数据不持久”；桌面安装包才使用 SQLite 和 Keychain。
 
-可选模型只负责解释结构化的本地规则事实。本地引擎的合法动作、胜率、EV、评分和结算始终优先；未配置密钥或连接失败时仍可完整训练。
+可选模型只负责解释结构化的本地规则事实。本地引擎的合法动作、范围、胜率、EV、评分和结算始终优先；本地无鉴权模型可不配置密钥，模型关闭或连接失败时仍可完整训练。
 
 ## 完整验收
 

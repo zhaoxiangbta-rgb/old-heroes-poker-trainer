@@ -102,3 +102,26 @@
 .pre-action-analysis-section h3 { margin: 0 0 7px; color: #dfc681; font-size: 15px; letter-spacing: .02em; }
 .pre-action-analysis-section p { margin: 0; color: #c7d0ca; font-size: 13px; line-height: 1.75; }
 .pre-action-analysis-section--baseline { margin: 4px -8px; padding: 14px 10px; border: 1px solid rgba(195, 151, 57, .34); border-radius: 9px; background: rgba(126, 88, 18, .1); }
+.ai-live-coach {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 16px;
+  padding: 16px;
+  border: 1px solid rgba(204, 160, 72, .55);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(28, 35, 31, .96), rgba(11, 16, 14, .98));
+  box-shadow: inset 0 1px rgba(255,255,255,.04), 0 10px 28px rgba(0,0,0,.18);
+}
+.ai-live-coach > header { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+.ai-live-coach > header div { display:grid; gap:4px; }
+.ai-live-coach > header span, .ai-live-coach h3 { color:#caa453; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+.ai-live-coach > header b { font-size:20px; color:#f3e3bb; }
+.ai-live-coach > header small { color:#728078; text-align:right; }
+.ai-live-coach p { margin:5px 0; line-height:1.65; color:#d3d9d4; }
+.ai-live-coach__risks { padding-left:11px; border-left:2px solid rgba(190,113,72,.7); }
+.ai-live-coach__recommendation { padding:10px 12px; border-radius:9px; background:rgba(193,148,59,.12); color:#efd187; }
+.ai-live-coach.is-loading, .ai-live-coach.is-fallback { grid-template-columns:1fr; color:#b9c2bc; }
+.ai-live-coach.is-loading span, .ai-live-coach.is-fallback span { font-size:13px; color:#7f8a84; }
+.local-facts-disclosure { margin-top:10px; }
+.local-facts-disclosure > summary, .ai-local-evidence > summary { cursor:pointer; color:#9eaa9f; padding:9px 0; }
+.local-facts-disclosure[open] > summary { color:#d4b160; }

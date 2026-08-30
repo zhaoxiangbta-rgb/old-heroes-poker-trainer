@@ -33,7 +33,7 @@ describe("mobile IndexedDB repository", () => {
     const repository = createIndexedDbRepository({ databaseName: "safe", indexedDB: new IDBFactory() });
     await repository.saveApiKey("SENTINEL-MOBILE-SECRET");
     expect(await repository.hasApiKey()).toBe(false);
-    expect(await repository.loadModelSettings()).toEqual({ baseUrl: "", model: "" });
+    expect(await repository.loadModelSettings()).toEqual({ baseUrl: "", model: "", enabled: false });
   });
 
   it("restores hands and gameplay settings after the mobile app is recreated", async () => {

@@ -27,8 +27,9 @@ import type { DecisionFacts } from "./engine/analysis";
 import { useDeferredDecisionFacts } from "./game/useDeferredDecisionFacts";
 import { usePreActionInsights } from "./insights/usePreActionInsights";
 import { PreActionInsights } from "./components/PreActionInsights";
+import { AiLiveCoach } from "./components/AiLiveCoach";
 import { createRepository, type DesktopRepository } from "./data/repository";
-import type { GameplaySettings } from "./data/types";
+import type { GameplaySettings, ModelSettings } from "./data/types";
 import { normalizeGameplaySettings } from "./ui/tableThemes";
 import { TABLE_PROFILES } from "./policy/tableProfiles";
 import { summarizeWeaknesses } from "./training/curriculum";
@@ -38,6 +39,8 @@ import { APP_VERSION_LABEL, STRATEGY_ENGINE_LABEL, STRATEGY_ENGINE_VERSION } fro
 import { useDeepReview } from "./review/useDeepReview";
 import { assessmentFromDeepDecision } from "./training/assessment";
 import type { DeepReviewStatus } from "./review/types";
+import { useAiLiveCoach } from "./ai/useAiLiveCoach";
+import { useAiHandReview } from "./ai/useAiHandReview";
 import "./training.css";
 import "./app-version.css";
 import "./pre-action-insights.css";
@@ -81,6 +84,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
     [repository] = useState(() => suppliedRepository ?? createRepository()),
     [history, setHistory] = useState<GameState[]>([]),
     [historyLoading, setHistoryLoading] = useState(true),
+    [modelSettings, setModelSettings] = useState<ModelSettings>({ baseUrl: "", model: "", enabled: false }),
     [gameplaySettings, setGameplaySettings] = useState<GameplaySettings>(() => normalizeGameplaySettings({})),
     [storageNotice, setStorageNotice] = useState(""),
     [reviewReadyKey, setReviewReadyKey] = useState(""),
@@ -95,6 +99,13 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
   const handComplete = game.phase === "review" && phase === "hand-complete";
   const facts = useDeferredDecisionFacts(game, phase === "hero-turn");
   const preActionInsights = usePreActionInsights(game, phase === "hero-turn");
+  const aiLiveCoach = useAiLiveCoach({
+    repository,
+    settings: modelSettings,
+    game,
+    insight: preActionInsights.state,
+    active: phase === "hero-turn",
+  });
   const weaknessSummaries = useMemo(() => summarizeWeaknesses(history), [history]);
   const handKey = `${game.seed}:${game.handNo}`;
   const deepReviewInput = useMemo(() => ({
@@ -139,19 +150,36 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
     : reviewRuntimeKey === handKey && deepReviewRuntimeStatus !== "not-started"
       ? deepReviewRuntimeStatus
       : game.deepReviewStatus;
+  const aiHandReview = useAiHandReview({
+    repository,
+    settings: modelSettings,
+    game,
+    localReview: game.deepReview,
+    onCompleted: (review) => {
+      if (review.stateHash !== game.deepReview?.stateHash) return;
+      const reviewed = structuredClone(game);
+      reviewed.aiReview = review;
+      reviewed.aiReviewStatus = "completed";
+      reviewed.aiReviewError = undefined;
+      replaceGame(reviewed);
+      void repository.replaceHand(reviewed).catch(() => setStorageNotice("AI 复盘未保存"));
+    },
+  });
   useEffect(() => { sound.current.setEnabled(soundEnabled); saveSoundPreference(soundEnabled); }, [soundEnabled]);
   useEffect(() => () => sound.current.dispose(), []);
   useEffect(() => {
     let active = true;
     void (async () => {
       try {
-        const [stored, gameplay] = await Promise.all([
+        const [stored, gameplay, model] = await Promise.all([
           repository.loadHands(),
           repository.loadGameplaySettings(),
+          repository.loadModelSettings(),
         ]);
         if (active) {
           setHistory(stored);
           setGameplaySettings(gameplay);
+          setModelSettings(model);
           if (
             initialGame.tableProfileId !== gameplay.tableProfileId ||
             JSON.stringify(initialGame.playerProfiles) !==
@@ -338,6 +366,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
             game={game}
             facts={facts}
             insightState={preActionInsights.state}
+            aiLiveCoach={aiLiveCoach}
             showPreActionInsights={!mobile}
             phase={phase}
             reviewStatus={visibleReviewStatus}
@@ -346,6 +375,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
             onCancelReview={cancelDeepReview}
             onRetryReview={startDeepReview}
             onNextHand={() => startTrainingHand({ mode: "none" })}
+            aiReviewRuntime={aiHandReview}
           />
         </ResizableWorkspace>
       ) : page === "历史牌局" ? (
@@ -365,7 +395,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
       ) : page === "弱点报告" ? (
         <WeaknessReportPage summaries={weaknessSummaries} hands={history} onTrain={startSpecialty} onOpenHand={(hand) => { replaceGame(hand); setPage("继续训练"); }} />
       ) : page === "设置" ? (
-        <SettingsPage repository={repository} soundEnabled={soundEnabled} currentHandProfileId={game.tableProfileId} onGameplaySettingsChange={setGameplaySettings} setSoundEnabled={setSoundEnabled} hideModel={mobile} />
+        <SettingsPage repository={repository} soundEnabled={soundEnabled} currentHandProfileId={game.tableProfileId} onGameplaySettingsChange={setGameplaySettings} onModelSettingsChange={setModelSettings} setSoundEnabled={setSoundEnabled} hideModel={mobile} />
       ) : null}
       <footer>
         规则引擎 v0.2 · 本地事实优先 <span>虚拟筹码 · 不涉及真钱</span>
@@ -413,6 +443,7 @@ function Teaching({
   game,
   facts,
   insightState,
+  aiLiveCoach,
   showPreActionInsights,
   phase,
   reviewStatus,
@@ -421,10 +452,12 @@ function Teaching({
   onCancelReview,
   onRetryReview,
   onNextHand,
+  aiReviewRuntime,
 }: {
   game: GameState;
   facts?: DecisionFacts;
   insightState: ReturnType<typeof usePreActionInsights>["state"];
+  aiLiveCoach: ReturnType<typeof useAiLiveCoach>;
   showPreActionInsights: boolean;
   phase: ReturnType<typeof useGamePlayback>["phase"];
   reviewStatus: DeepReviewStatus;
@@ -433,6 +466,7 @@ function Teaching({
   onCancelReview(): void;
   onRetryReview(): void;
   onNextHand(): void;
+  aiReviewRuntime: ReturnType<typeof useAiHandReview>;
 }) {
   if (isNoActionPlayback(phase)) return null;
   if (game.phase === "review") {
@@ -469,7 +503,7 @@ function Teaching({
     }
     return (
       <aside>
-        <DeepHandReviewView game={game} review={game.deepReview} onRecalculate={onRetryReview} onNextHand={onNextHand} />
+        <DeepHandReviewView game={game} review={game.deepReview} aiReview={aiReviewRuntime.review ?? game.aiReview} aiStatus={aiReviewRuntime.status} onRetryAi={aiReviewRuntime.retry} onRecalculate={onRetryReview} onNextHand={onNextHand} />
         <ReviewShowdown game={game} />
         <h3>本次运行总账</h3>
         <SessionLedger players={game.players} />
@@ -481,7 +515,8 @@ function Teaching({
       <aside>
         <p className="eyebrow">实时规则事实 · 不揭示未来牌</p>
         {insightState.analysis ? null : <h2>正在整理当前决策…</h2>}
-        <PreActionInsights state={insightState} game={game} />
+        <AiLiveCoach state={aiLiveCoach} />
+        <PreActionInsights state={insightState} game={game} aiPrimary={aiLiveCoach.status === "ready"} />
       </aside>
     );
   }
@@ -534,7 +569,7 @@ function Teaching({
       ) : (
         <div className="ev" role="status">正在后台枚举胜率与 EV，操作按钮仍可立即使用。</div>
       )}
-      {showPreActionInsights ? <PreActionInsights state={insightState} game={game} /> : null}
+      {showPreActionInsights ? <><AiLiveCoach state={aiLiveCoach} /><PreActionInsights state={insightState} game={game} aiPrimary={aiLiveCoach.status === "ready"} /></> : null}
     </aside>
   );
 }

@@ -211,6 +211,20 @@ export type WholeHandCoachReview = {
 
 export type DeepHandReview = DeepHandReviewV1 | DeepHandReviewV2 | DeepHandReviewV3;
 
+export type PersistedAiHandReview = {
+  version: 1;
+  factsVersion: 1;
+  stateHash: string;
+  model: string;
+  elapsedMs: number;
+  summary: string;
+  streets: Array<{ street: Street; analysis: string }>;
+  turningPoint: string;
+  keyLesson: string;
+};
+
+export type AiReviewStatus = "not-started" | "calculating" | "completed" | "failed";
+
 export type DeepReviewStage =
   | "action-line"
   | "ranges"

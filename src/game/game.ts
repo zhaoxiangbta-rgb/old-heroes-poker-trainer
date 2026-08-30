@@ -19,9 +19,11 @@ import type {
   TrainingTarget,
 } from "../training/types";
 import type {
+  AiReviewStatus,
   DeepDecisionInput,
   DeepHandReview,
   DeepReviewStatus,
+  PersistedAiHandReview,
 } from "../review/types";
 import {
   DEFAULT_PLAYER_PROFILES,
@@ -165,6 +167,9 @@ export type GameState = {
   deepReviewStatus: DeepReviewStatus;
   deepReview?: DeepHandReview;
   deepReviewError?: string;
+  aiReviewStatus: AiReviewStatus;
+  aiReview?: PersistedAiHandReview;
+  aiReviewError?: string;
 };
 export type NewGameOptions = {
   tableProfileId?: TableProfileId;
@@ -809,6 +814,7 @@ export function newGame(
     assessmentStatus: "ready",
     reviewDecisionInputs: [],
     deepReviewStatus: "not-started",
+    aiReviewStatus: "not-started",
   };
   const firstToDeal = playerCount === 2 ? button : (button + 1) % playerCount;
   for (let n = 0; n < 2; n++)
@@ -847,6 +853,9 @@ export function normalizeGameState(state: GameState): GameState {
     deepReviewStatus?: DeepReviewStatus;
     deepReview?: DeepHandReview;
     deepReviewError?: string;
+    aiReviewStatus?: AiReviewStatus;
+    aiReview?: PersistedAiHandReview;
+    aiReviewError?: string;
   };
   if (!(["balanced", "friends", "loose-wild"] as string[]).includes(s.tableProfileId ?? ""))
     s.tableProfileId = "balanced";
@@ -915,6 +924,9 @@ export function normalizeGameState(state: GameState): GameState {
   if (s.deepReview && (!s.deepReview.stateHash || s.deepReview.status !== "completed"))
     s.deepReview = undefined;
   if (s.deepReviewStatus !== "failed") s.deepReviewError = undefined;
+  s.aiReviewStatus ??= "not-started";
+  if (s.aiReview && (!s.aiReview.stateHash || s.aiReview.version !== 1)) s.aiReview = undefined;
+  if (s.aiReviewStatus !== "failed") s.aiReviewError = undefined;
   return sync(s as GameState);
 }
 export function isHeroTurn(state: GameState) {

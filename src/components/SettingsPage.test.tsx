@@ -12,7 +12,7 @@ describe("SettingsPage", () => {
 
   it("loads ordinary settings and clearly labels preview mode", async () => {
     const repository = createMemoryRepository();
-    await repository.saveModelSettings({ baseUrl: "http://localhost:8317", model: "local-model" });
+    await repository.saveModelSettings({ baseUrl: "http://localhost:8317", model: "local-model", enabled: false });
     render(
       <SettingsPage repository={repository} soundEnabled setSoundEnabled={vi.fn()} />,
     );
@@ -31,11 +31,11 @@ describe("SettingsPage", () => {
     render(
       <SettingsPage repository={repository} soundEnabled setSoundEnabled={vi.fn()} />,
     );
-    await waitFor(() => expect(screen.getByLabelText("模型名")).toHaveValue("gpt-local"));
+    await waitFor(() => expect(screen.getByLabelText("模型名")).toHaveValue("Qwen3.5-9B-Q8"));
     fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "http://localhost:9000" } });
     fireEvent.change(screen.getByLabelText("模型名"), { target: { value: "new-model" } });
     fireEvent.click(screen.getByRole("button", { name: "保存模型设置" }));
-    await waitFor(() => expect(saveSettings).toHaveBeenCalledWith({ baseUrl: "http://localhost:9000", model: "new-model" }));
+    await waitFor(() => expect(saveSettings).toHaveBeenCalledWith({ baseUrl: "http://localhost:9000", model: "new-model", enabled: false }));
 
     fireEvent.click(screen.getByRole("button", { name: "保存 API Key" }));
     expect(screen.getByText("API Key 不能为空")).toBeVisible();
@@ -44,6 +44,17 @@ describe("SettingsPage", () => {
     await waitFor(() => expect(screen.getByText("密钥状态：已保存")).toBeVisible());
     expect(screen.getByLabelText("API Key")).toHaveValue("");
     expect(document.body.textContent).not.toContain("SENTINEL-DESKTOP-SECRET");
+  });
+
+  it("explicitly enables AI coaching and keeps the local Qwen key optional", async () => {
+    const repository = createMemoryRepository();
+    const saved = vi.spyOn(repository, "saveModelSettings");
+    render(<SettingsPage repository={repository} soundEnabled setSoundEnabled={vi.fn()} />);
+    await waitFor(() => expect(screen.getByLabelText("启用 AI 解读")).not.toBeChecked());
+    expect(screen.getByPlaceholderText("本地 Qwen 无需密钥可留空")).toBeVisible();
+    fireEvent.click(screen.getByLabelText("启用 AI 解读"));
+    fireEvent.click(screen.getByRole("button", { name: "保存模型设置" }));
+    await waitFor(() => expect(saved).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, model: "Qwen3.5-9B-Q8" })));
   });
 
   it("tests connection with a busy lock and offline-safe result", async () => {
@@ -55,7 +66,7 @@ describe("SettingsPage", () => {
     render(
       <SettingsPage repository={repository} soundEnabled setSoundEnabled={vi.fn()} />,
     );
-    await waitFor(() => expect(screen.getByLabelText("模型名")).toHaveValue("gpt-local"));
+    await waitFor(() => expect(screen.getByLabelText("模型名")).toHaveValue("Qwen3.5-9B-Q8"));
     fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
     expect(screen.getByRole("button", { name: "连接中…" })).toBeDisabled();
     finish();
