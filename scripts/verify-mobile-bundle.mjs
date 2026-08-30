@@ -89,7 +89,7 @@ for (const url of JSON.parse(precacheMatch[1])) {
   if (!files.includes(path)) throw new Error(`precache resource missing: ${url}`);
 }
 const workflow = await readFile(fileURLToPath(new URL("../.github/workflows/pages.yml", import.meta.url)), "utf8");
-for (const requiredStep of ["npm ci", "npm test", "npm run build", "npm run verify:mobile-bundle", "path: dist/mobile"]) {
+for (const requiredStep of ["npm ci", "npm run test:ci", "npm run build", "npm run verify:mobile-bundle", "path: dist/mobile"]) {
   if (!workflow.includes(requiredStep)) throw new Error(`Pages workflow missing required step: ${requiredStep}`);
 }
 console.log(`mobile PWA verified: ${files.length} files, complete precache, no private identities or secrets`);
