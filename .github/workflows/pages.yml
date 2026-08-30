@@ -28,7 +28,7 @@ jobs:
       - name: 安装依赖
         run: npm ci
       - name: 运行前端测试
-        run: npm test
+        run: npm run test:ci
       - name: 验证 PWA 资源生成器
         run: node --test scripts/build-pwa-assets.test.mjs
       - name: 构建桌面资源与独立 PWA
