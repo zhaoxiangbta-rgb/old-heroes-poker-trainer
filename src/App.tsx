@@ -503,7 +503,7 @@ function Teaching({
     }
     return (
       <aside>
-        <DeepHandReviewView game={game} review={game.deepReview} aiReview={aiReviewRuntime.review ?? game.aiReview} aiStatus={aiReviewRuntime.status} onRetryAi={aiReviewRuntime.retry} onRecalculate={onRetryReview} onNextHand={onNextHand} />
+        <DeepHandReviewView game={game} review={game.deepReview} aiReview={aiReviewRuntime.review ?? game.aiReview} aiStatus={aiReviewRuntime.status} aiError={aiReviewRuntime.error} onRetryAi={aiReviewRuntime.retry} onRecalculate={onRetryReview} onNextHand={onNextHand} />
         <ReviewShowdown game={game} />
         <h3>本次运行总账</h3>
         <SessionLedger players={game.players} />

@@ -27,16 +27,18 @@ pub enum StorageError {
 pub struct ModelSettings {
     pub base_url: String,
     pub model: String,
-    #[serde(default)]
+    #[serde(default = "default_ai_enabled")]
     pub enabled: bool,
 }
+
+fn default_ai_enabled() -> bool { true }
 
 impl Default for ModelSettings {
     fn default() -> Self {
         Self {
             base_url: "http://192.168.120.86:8081/v1/chat/completions".into(),
             model: "Qwen3.5-9B-Q8".into(),
-            enabled: false,
+            enabled: true,
         }
     }
 }
@@ -848,7 +850,7 @@ mod tests {
     }
 
     #[test]
-    fn defaults_legacy_model_settings_to_ai_disabled() {
+    fn defaults_legacy_model_settings_to_ai_enabled() {
         let c = Connection::open_in_memory().unwrap();
         migrate(&c).unwrap();
         c.execute(
@@ -857,7 +859,7 @@ mod tests {
         )
         .unwrap();
         let settings = load_model_settings(&c).unwrap();
-        assert!(!settings.enabled);
+        assert!(settings.enabled);
         assert_eq!(settings.model, "Qwen3.5-9B-Q8");
     }
 

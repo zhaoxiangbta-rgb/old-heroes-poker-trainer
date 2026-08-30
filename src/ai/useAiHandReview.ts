@@ -14,10 +14,13 @@ export type AiHandReviewRuntime = {
 };
 
 function deadline<T>(promise: Promise<T>, milliseconds: number) {
-  return Promise.race<T>([
-    promise,
-    new Promise<T>((_, reject) => globalThis.setTimeout(() => reject(new Error("AI 复盘超时")), milliseconds)),
-  ]);
+  return new Promise<T>((resolve, reject) => {
+    const timer = globalThis.setTimeout(() => reject(new Error("AI 复盘超时")), milliseconds);
+    void promise.then(
+      (value) => { globalThis.clearTimeout(timer); resolve(value); },
+      (error: unknown) => { globalThis.clearTimeout(timer); reject(error); },
+    );
+  });
 }
 
 export function useAiHandReview({
@@ -46,16 +49,34 @@ export function useAiHandReview({
       setState({ status: "completed", review: game.aiReview });
       return;
     }
-    if (!settings.enabled || repository.mode !== "native" || !localReview) {
+    if (!localReview) {
       setState({ status: "not-started" });
+      return;
+    }
+    if (!settings.enabled) {
+      setState({ status: "not-started", error: "AI 解读尚未启用；请在设置中开启后重试。" });
+      return;
+    }
+    if (repository.mode !== "native") {
+      setState({ status: "not-started", error: "开发预览页不调用本地模型；请打开 macOS 应用查看 AI 复盘。" });
       return;
     }
     const facts = buildAiReviewFacts(game, localReview);
     setState({ status: "calculating" });
-    void deadline(repository.generateAiExplanation({ kind: "review", facts: facts as unknown as Record<string, unknown> }), 30_500)
-      .then((result) => {
+    const generate = async () => {
+      const first = await deadline(repository.generateAiExplanation({ kind: "review", facts: facts as unknown as Record<string, unknown> }), 45_500);
+      try {
+        return { result: first, parsed: parseAiReviewOutput(first.content, facts) };
+      } catch (error: unknown) {
+        const validationFeedback = error instanceof Error ? error.message : "模型输出未通过本地审核";
+        const correctedFacts = { ...facts, validationFeedback: `上一次输出被拒绝：${validationFeedback}。请严格重新生成，不要引入任何新事实。` };
+        const second = await deadline(repository.generateAiExplanation({ kind: "review", facts: correctedFacts as unknown as Record<string, unknown> }), 45_500);
+        return { result: { ...second, elapsedMs: first.elapsedMs + second.elapsedMs }, parsed: parseAiReviewOutput(second.content, facts) };
+      }
+    };
+    void generate()
+      .then(({ result, parsed }) => {
         if (identity.current !== current) return;
-        const parsed = parseAiReviewOutput(result.content, facts);
         const review: PersistedAiHandReview = { ...parsed, factsVersion: 1, model: result.model, elapsedMs: result.elapsedMs };
         setState({ status: "completed", review });
         completed.current(review);

@@ -34,6 +34,13 @@ export type AiReviewFactPackV1 = {
   stateHash: string;
   handNo: number;
   seed: number;
+  tableProfile: string;
+  heroHole: [Card, Card];
+  playerProfiles: Array<{
+    playerId: string;
+    name: string;
+    style: string;
+  }>;
   conclusionFacts: string[];
   streets: Array<{
     street: Street;
@@ -42,6 +49,21 @@ export type AiReviewFactPackV1 = {
     actual: string;
     recommended: string;
     facts: string[];
+    decisions: Array<{
+      position: string;
+      heroHand: string;
+      privateContribution: boolean;
+      equity: string;
+      requiredEquity: string;
+      pot: number;
+      playersBehind: number;
+      opponentBuckets: Array<{ label: string; probability: string }>;
+      opponentResponses: Array<{ action: string; probability: string }>;
+      recommendationReasons: string[];
+      changeConditions: string[];
+      betterHandClasses: string[];
+      betterHandExamples: string[];
+    }>;
   }>;
   recommendationKeys: string[];
   allowedNumbers: string[];

@@ -87,15 +87,17 @@ npm run tauri build
 
 可直接使用的安装包请到 GitHub Releases 下载：
 
-- `Old-Heroes-Poker-Trainer-v1.4.11-macOS-Apple-Silicon.dmg`
+- `Old-Heroes-Poker-Trainer-v1.6.1-macOS-Apple-Silicon.dmg`
 - `Old-Heroes-Poker-Trainer-v1.4.11-Windows-x64-Portable.zip`
-- `Old-Heroes-Poker-Trainer-v1.4.11-Mobile-PWA.zip`
+- `Old-Heroes-Poker-Trainer-v1.6.1-Mobile-PWA.zip`
 
 SHA-256：
 
-- macOS：`df7ebcb7938148b2509aa7072dc7785ead8ea8264e8bae751935f0ee64bba64c`
+- macOS：`abe0ebc397fe17be05a360dfff1e1ae7be2183cbd131d6be736c9d696f174575`
 - Windows：`b1ea6b50abecd78f5f295df35ffd500a8c3240da384c1fedeadede01d4fd5483`
-- 移动版 PWA：`599329fcbdb838baad6cae9554f8b106546ea349957e05c10f6bfe33f1fc72c9`
+- 移动版 PWA：`0ca8b1362923c6a60daf7e0788d2df1e17514c437914e61e73c78661f769defe`
+
+macOS v1.6.1 可选调用 OpenAI-compatible 本地模型生成盘中解释和逐街整手复盘；模型输出必须通过本地牌型、动作、概率与范围事实审核，未通过时自动重试并显示确切错误。移动 PWA 保持完全离线，不调用桌面端本地模型。
 
 Windows 免安装版解压后双击 `Old-Heroes-Poker-Trainer.exe`；程序窗口与界面仍显示“老英雄牌局”。压缩包内部使用 ASCII 文件名，避免不同 Windows 解压工具把中文启动文件名显示成乱码。Windows 10/11 通常已自带 WebView2 Runtime。两端均不需要 Codex、Node、Python 或网络。
 

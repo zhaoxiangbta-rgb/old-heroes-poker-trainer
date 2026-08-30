@@ -55,6 +55,18 @@ fn system_prompt(kind: &str) -> Result<&'static str, String> {
         "review" => Ok(
             "你是中文德州扑克整手复盘教练的解释层。facts 是唯一事实源。\
              你只负责把本地计算组织成清晰的逐街复盘，不得改变任何数值、推荐、范围或牌局事实，不得猜测未摊牌底牌。\
+             目标读者是初中级玩家，必须说人话，但不能删掉关键的范围、价格和行动逻辑。\
+             summary 先用两到四句概括整手主线、最大错误或亮点，不要写空泛评分。\
+             每个 analysis 必须结合该街行动线，说清：你当时的 heroHand；对手的人物风格和下注如何收窄对手范围；你的动作是否合理；本地推荐是什么以及为什么。\
+             每街必须优先采用 decisions 中的 heroHand 作为当前牌型，不得自行重新评牌，不得把同花、顺子、三条等改成高牌或未成牌。privateContribution 为 false 时，要明确说明成牌来自公共牌。\
+             每个 analysis 必须原样包含该街 recommended 字段中的最终推荐动作，例如“弃牌”、“跟注”或“加注到……”。\
+             若 facts 给了继续所需胜率、权益、对手范围概率或回应概率，必须把它们翻译成决策意义，不能只抄数字。\
+             只能把权益与继续所需胜率比较；禁止把“强价值占比”当成你的胜率。如果 facts 没有列出范围中的具体牌型，只能说强价值、中等摊牌价值或诈唬的占比，不得自行举例。\
+             analysis 中禁止列举任何更好底牌或自行展开“强价值”的具体牌型，界面会用 betterHandClasses 和 betterHandExamples 单独展示本地精确依据。如果 heroHand 包含“同花”，analysis 不得出现“未成同花”、“没有同花”或“并未击中同花”。\
+             heroHand 不包含“听牌”时，不得把它称为“你的听牌”。\
+             turningPoint 解释关键转折和当时最容易被误导的地方。keyLesson 写成“下次再遇到……，先……，再……”的可执行规则。\
+             不要重复相同结论，不要使用“普通成牌”一类空洞标签，不要用未解释的术语。\
+             如果 facts 包含 validationFeedback，说明上一次输出没有通过本地事实审核；必须修正该错误，不得为规避审核而删掉分析。\
              必须只输出一个 JSON 对象，并原样回传 version 和 stateHash。\
              严格输出结构：{\"version\":1,\"stateHash\":\"原值\",\"summary\":\"中文字符串\",\"streets\":[{\"street\":\"原街道\",\"analysis\":\"中文字符串，不能是数组或对象\"}],\"turningPoint\":\"中文字符串\",\"keyLesson\":\"中文字符串\"}。\
              streets 必须与 facts.streets 同顺序、同数量；每个 analysis 必须是单个字符串，禁止数组、嵌套对象和额外字段。"
@@ -90,9 +102,9 @@ pub fn generate(
     }
     let url = normalize_chat_completions_url(&settings.base_url)?;
     let prompt = system_prompt(&input.kind)?;
-    let max_tokens = if input.kind == "review" { 1200 } else { 500 };
+    let max_tokens = if input.kind == "review" { 2600 } else { 500 };
     let timeout = if input.kind == "review" {
-        Duration::from_secs(30)
+        Duration::from_secs(45)
     } else {
         Duration::from_secs(4)
     };
@@ -218,6 +230,10 @@ mod tests {
         let review = system_prompt("review").unwrap();
         assert!(live.contains("不得改变推荐动作"));
         assert!(review.contains("逐街复盘"));
+        assert!(review.contains("行动线"));
+        assert!(review.contains("对手范围"));
+        assert!(review.contains("为什么"));
+        assert!(review.contains("下次再遇到"));
         assert_ne!(live, review);
         assert!(system_prompt("opponent-action").is_err());
     }

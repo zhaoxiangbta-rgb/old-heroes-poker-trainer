@@ -15,4 +15,7 @@
 .ai-review-status.is-failed { border-color:rgba(165,90,73,.35); }
 .ai-review-summary p { font-size:16px; line-height:1.75; }
 .ai-review-streets article > p:not(.whole-hand-line) { font-size:15px; line-height:1.75; }
+.ai-grounded-facts { display:grid; gap:6px; margin:10px 0 12px; padding:10px 12px; border-left:3px solid #c69a49; border-radius:7px; background:#191b14; }
+.ai-grounded-facts p { margin:0!important; color:#cdd4cf; font-size:13px!important; line-height:1.65!important; }
+.ai-grounded-facts b { color:#e4c678; }
 .ai-local-evidence { margin:16px 0; padding:0 12px 12px; border:1px solid rgba(255,255,255,.08); border-radius:10px; }

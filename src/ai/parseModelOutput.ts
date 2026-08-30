@@ -50,6 +50,19 @@ function verifyCards(value: AiLiveExplanationV1, facts: AiLiveFactPackV1) {
   if (mentioned.some((card) => !known.has(card.toLowerCase()))) throw new Error("模型声称了未知底牌");
 }
 
+const HAND_TERMS = ["同花顺", "暗三条", "顶对", "高牌", "一对", "两对", "三条", "顺子", "同花", "葫芦", "四条"];
+
+function verifyReviewHandTerms(street: AiHandReviewV1["streets"][number], factStreet: AiReviewFactPackV1["streets"][number]) {
+  const allowed = JSON.stringify(factStreet);
+  const invented = HAND_TERMS.find((term) => street.analysis.includes(term) && !allowed.includes(term));
+  if (invented) throw new Error(`逐街出现未经本地确认的牌型：${street.street}:${invented}`);
+  const heroHand = factStreet.decisions[0]?.heroHand ?? "";
+  if (heroHand.includes("同花") && /(未成|没有|并未\S*)同花/.test(street.analysis))
+    throw new Error(`逐街牌型自相矛盾：${street.street}`);
+  if (!heroHand.includes("听牌") && street.analysis.includes("你的听牌"))
+    throw new Error(`逐街把成牌误说成听牌：${street.street}`);
+}
+
 export function parseAiLiveOutput(raw: string, facts: AiLiveFactPackV1): AiLiveExplanationV1 {
   const data = object(unwrapJson(raw));
   if (data.version !== 1) throw new Error("模型输出版本不兼容");
@@ -85,6 +98,10 @@ export function parseAiReviewOutput(raw: string, facts: AiReviewFactPackV1): AiH
   for (const [index, street] of streets.entries()) {
     const required = facts.streets[index].recommended.split("→").at(-1)?.trim();
     if (required && !street.analysis.includes(required)) throw new Error(`逐街推荐动作冲突：${street.street}`);
+    const heroHand = facts.streets[index].decisions[0]?.heroHand;
+    if (heroHand && heroHand !== "本地牌型未分类" && !street.analysis.includes(heroHand))
+      throw new Error(`逐街当前牌型丢失：${street.street}`);
+    verifyReviewHandTerms(street, facts.streets[index]);
   }
   const parsed: AiHandReviewV1 = {
     version: 1,

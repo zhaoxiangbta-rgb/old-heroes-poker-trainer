@@ -14,6 +14,16 @@ function localReview(): DeepHandReview {
 }
 
 describe("useAiHandReview", () => {
+  it("explains why AI review cannot run in the browser preview instead of silently showing the local template", async () => {
+    const repository = createMemoryRepository();
+    const game = newGame(1); game.phase = "review";
+    const review = localReview();
+    const completed = vi.fn();
+    const { result } = renderHook(() => useAiHandReview({ repository, settings: { baseUrl: "x", model: "qwen", enabled: true }, game, localReview: review, onCompleted: completed }));
+    await waitFor(() => expect(result.current.status).toBe("not-started"));
+    expect(result.current.error).toMatch(/开发预览.*macOS 应用/);
+  });
+
   it("waits for local facts and then persists one valid AI review", async () => {
     const repository = createMemoryRepository(); Object.defineProperty(repository, "mode", { value: "native" });
     const game = newGame(1); game.phase = "review";
@@ -29,5 +39,21 @@ describe("useAiHandReview", () => {
     act(() => resolve({ model: "qwen", elapsedMs: 500, content: JSON.stringify({ version: 1, stateHash: facts.stateHash, summary: "河牌应弃牌", streets: [{ street: "river", analysis: "面对下注到7应弃牌" }], turningPoint: "河牌", keyLesson: "尊重大注" }) }));
     await waitFor(() => expect(result.current.status).toBe("completed"));
     expect(completed).toHaveBeenCalledWith(expect.objectContaining({ model: "qwen", stateHash: "review-1" }));
+  });
+
+  it("retries once with validation feedback when the first model answer changes the recommendation", async () => {
+    const repository = createMemoryRepository(); Object.defineProperty(repository, "mode", { value: "native" });
+    const game = newGame(1); game.phase = "review";
+    const review = localReview();
+    const facts = buildAiReviewFacts(game, review);
+    const valid = { version: 1, stateHash: facts.stateHash, summary: "河牌应弃牌", streets: [{ street: "river", analysis: "面对下注到7应弃牌" }], turningPoint: "河牌", keyLesson: "尊重大注" };
+    const generate = vi.spyOn(repository, "generateAiExplanation")
+      .mockResolvedValueOnce({ model: "qwen", elapsedMs: 300, content: JSON.stringify({ ...valid, streets: [{ street: "river", analysis: "面对下注到7应跟注" }] }) })
+      .mockResolvedValueOnce({ model: "qwen", elapsedMs: 400, content: JSON.stringify(valid) });
+    const { result } = renderHook(() => useAiHandReview({ repository, settings: { baseUrl: "x", model: "qwen", enabled: true }, game, localReview: review, onCompleted: vi.fn() }));
+    await waitFor(() => expect(result.current.status).toBe("completed"));
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[1][0].facts).toHaveProperty("validationFeedback");
+    expect(result.current.review?.elapsedMs).toBe(700);
   });
 });

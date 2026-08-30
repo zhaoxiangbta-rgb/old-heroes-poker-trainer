@@ -37,11 +37,16 @@ describe("AI output guard", () => {
   it("accepts a concise street-ordered whole-hand review", () => {
     const facts: AiReviewFactPackV1 = {
       version: 1, kind: "review", stateHash: "review-1", handNo: 1, seed: 7,
+      tableProfile: "普通朋友局",
+      heroHole: ["Th", "8h"],
+      playerProfiles: [{ playerId: "friend-02", name: "北辰", style: "紧弱" }],
       conclusionFacts: ["河牌应弃牌"],
-      streets: [{ street: "river", board: ["Jh", "9h", "7c", "Qd", "3h"], actionLine: ["对手加注到130"], actual: "跟注", recommended: "弃牌", facts: ["所需胜率27.3%"] }],
+      streets: [{ street: "river", board: ["Jh", "9h", "7c", "Qd", "3h"], actionLine: ["对手加注到130"], actual: "跟注", recommended: "弃牌", facts: ["所需胜率27.3%"], decisions: [{ position: "庄位", heroHand: "J高同花", privateContribution: true, equity: "18.0%", requiredEquity: "27.3%", pot: 130, playersBehind: 0, opponentBuckets: [], opponentResponses: [], recommendationReasons: ["权益不足"], changeConditions: [], betterHandClasses: ["同花"], betterHandExamples: ["同花：Ah 2h"] }] }],
       recommendationKeys: ["river:fold"], allowedNumbers: ["1", "3", "7", "9", "27.3", "130"],
     };
-    const raw = JSON.stringify({ version: 1, stateHash: "review-1", summary: "河牌应弃牌。", streets: [{ street: "river", analysis: "需要27.3%胜率，本地权益不足，建议弃牌。" }], turningPoint: "河牌面对加注到130。", keyLesson: "被动局大加注优先尊重价值范围。" });
+    const raw = JSON.stringify({ version: 1, stateHash: "review-1", summary: "河牌应弃牌。", streets: [{ street: "river", analysis: "你是J高同花，需要27.3%胜率，本地权益不足，建议弃牌。" }], turningPoint: "河牌面对加注到130。", keyLesson: "被动局大加注优先尊重价值范围。" });
     expect(parseAiReviewOutput(raw, facts).streets).toHaveLength(1);
+    const invented = JSON.stringify({ version: 1, stateHash: "review-1", summary: "河牌应弃牌。", streets: [{ street: "river", analysis: "你是J高同花，对手的顶对或更好占比很高，建议弃牌。" }], turningPoint: "河牌。", keyLesson: "尊重加注。" });
+    expect(() => parseAiReviewOutput(invented, facts)).toThrow("未经本地确认的牌型");
   });
 });

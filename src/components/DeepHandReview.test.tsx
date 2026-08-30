@@ -197,10 +197,20 @@ describe("DeepHandReviewView", () => {
   it("uses a guarded AI review as primary prose and keeps local evidence collapsible", () => {
     const game = newGame(42); game.phase = "review";
     const local = wholeHandReview();
+    local.decisions[0].street = "river";
     render(<DeepHandReviewView game={game} review={local} aiStatus="completed" aiReview={{ version: 1, factsVersion: 1, stateHash: local.stateHash, model: "Qwen3.5-9B-Q8", elapsedMs: 700, summary: "河牌的对手行动已把范围压到强价值。", streets: [{ street: "river", analysis: "你需要27.3%胜率，但本地权益不足，应弃牌。" }], turningPoint: "河牌面对加注到130。", keyLesson: "被动局的河牌大加注优先尊重价值。" }} onRecalculate={vi.fn()} onNextHand={vi.fn()} />);
     expect(screen.getByText("AI 整手复盘 · 本地事实审核通过")).toBeVisible();
     expect(screen.getByText(/27.3%胜率/)).toBeVisible();
+    expect(screen.getByText("你当时的牌：")).toBeVisible();
+    expect(screen.getByText("对手范围估计：")).toBeVisible();
     expect(screen.getByText("查看本地 Solver 数字与范围依据")).toBeVisible();
     expect(screen.queryByText("最终范围")).not.toBeInTheDocument();
+  });
+
+  it("shows an actionable reason when AI prose is unavailable", () => {
+    const game = newGame(42); game.phase = "review";
+    render(<DeepHandReviewView game={game} review={wholeHandReview()} aiStatus="not-started" aiError="开发预览页不调用本地模型；请打开 macOS 应用查看 AI 复盘。" onRecalculate={vi.fn()} onNextHand={vi.fn()} />);
+    expect(screen.getByText("AI 整手复盘未生成")).toBeVisible();
+    expect(screen.getByText(/macOS 应用/)).toBeVisible();
   });
 });

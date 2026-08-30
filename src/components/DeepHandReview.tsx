@@ -1,6 +1,7 @@
 import { streetName, type GameState } from "../game/game";
 import type { AiReviewStatus, DeepDecisionReview, DeepHandReview, PersistedAiHandReview } from "../review/types";
 import { PlayingCard } from "./PlayingCard";
+import { buildAiReviewFacts } from "../ai/reviewFacts";
 
 function precisionLabel(review: DeepHandReview) {
   if (review.summary.precision === "exact") return "精确枚举";
@@ -9,6 +10,7 @@ function precisionLabel(review: DeepHandReview) {
 }
 
 function percent(value: number, digits = 0) { return `${(value * 100).toFixed(digits)}%`; }
+function humanCards(value: string) { return value.replace(/([2-9TJQKA])([cdhs])/g, (_, rank: string, suit: string) => `${rank}${({ c: "♣", d: "♦", h: "♥", s: "♠" } as Record<string, string>)[suit]}`); }
 
 function TechnicalDetails({ decision, playerNameById }: { decision: DeepDecisionReview; playerNameById: Map<string, string> }) {
   return <details className="coach-technical"><summary>查看专业计算依据</summary><div>
@@ -44,6 +46,7 @@ function AiHandReviewView({ game, local, ai }: { game: GameState; local: DeepHan
       ? local.wholeHand.streets.map((street) => [street.street, street] as const)
       : [],
   );
+  const groundedFacts = new Map(buildAiReviewFacts(game, local).streets.map((street) => [street.street, street] as const));
   return <>
     <div className="deep-review-summary ai-review-summary">
       <p className="eyebrow">AI 整手复盘 · 本地事实审核通过</p>
@@ -53,9 +56,15 @@ function AiHandReviewView({ game, local, ai }: { game: GameState; local: DeepHan
     </div>
     <section className="whole-hand-streets ai-review-streets"><h3>逐街点评</h3><div>{ai.streets.map((street) => {
       const evidence = localStreet.get(street.street);
+      const grounded = groundedFacts.get(street.street)?.decisions.at(-1);
       return <article key={street.street}>
         <header><b>{streetName(street.street)}</b>{evidence?.board.length ? <span className="whole-hand-board">{evidence.board.map((card) => <PlayingCard card={card} className="review-mini-card" key={card} />)}</span> : null}</header>
         {evidence?.actionLine.length ? <p className="whole-hand-line">行动：{evidence.actionLine.join(" → ")}</p> : null}
+        {grounded ? <div className="ai-grounded-facts">
+          <p><b>你当时的牌：</b>{grounded.heroHand}；对手范围下的权益 {grounded.equity}{grounded.requiredEquity !== "0.0%" ? `，继续至少需要 ${grounded.requiredEquity}` : ""}。</p>
+          {grounded.opponentBuckets.length ? <p><b>对手范围估计：</b>{grounded.opponentBuckets.map((bucket) => `${bucket.label} ${bucket.probability}`).join("；")}。</p> : null}
+          {grounded.betterHandClasses.length ? <p><b>可能赢你的牌：</b>{grounded.betterHandClasses.join("、")}{grounded.betterHandExamples.length ? `（例如 ${grounded.betterHandExamples.map(humanCards).join("；")}）` : ""}。</p> : null}
+        </div> : null}
         <p>{street.analysis}</p>
         {evidence ? <small>你的动作：{evidence.actual} · 本地更优线：{evidence.recommended}</small> : null}
       </article>;
@@ -74,6 +83,7 @@ export function DeepHandReviewView({
   review,
   aiReview,
   aiStatus = "not-started",
+  aiError,
   onRetryAi = () => {},
   onRecalculate,
   onNextHand,
@@ -82,6 +92,7 @@ export function DeepHandReviewView({
   review: DeepHandReview;
   aiReview?: PersistedAiHandReview;
   aiStatus?: AiReviewStatus;
+  aiError?: string;
   onRetryAi?(): void;
   onRecalculate(): void;
   onNextHand(): void;
@@ -103,7 +114,8 @@ export function DeepHandReviewView({
       ? <AiHandReviewView game={game} local={review} ai={aiReview} />
       : <>
         {aiStatus === "calculating" ? <div className="ai-review-status" role="status"><b>AI 正在组织整手复盘…</b><span>本地精算已完成，可继续查看下方依据。</span></div> : null}
-        {aiStatus === "failed" ? <div className="ai-review-status is-failed"><b>AI 复盘本次不可用</b><span>已回退本地复盘。</span><button type="button" onClick={onRetryAi}>重试 AI 复盘</button></div> : null}
+        {aiStatus === "failed" ? <div className="ai-review-status is-failed"><b>AI 复盘本次不可用</b><span>{aiError ?? "已回退本地复盘。"}</span><button type="button" onClick={onRetryAi}>重试 AI 复盘</button></div> : null}
+        {aiStatus === "not-started" && aiError ? <div className="ai-review-status is-failed"><b>AI 整手复盘未生成</b><span>{aiError}</span></div> : null}
         <div className="deep-review-summary"><p className="eyebrow">V4 整手复盘 · {precisionLabel(review)}</p><h2>整手结论</h2><strong>{review.summary.grade}</strong><span>累计 EV 损失 {(review.summary.totalNormalizedEvLoss * 100).toFixed(1)}%</span><p>{wholeHand.conclusion}</p><small>置信度 {(review.summary.confidence * 100).toFixed(0)}% · {review.strategyVersion} · {review.calculatorVersion}</small></div>
         <WholeHandCoachView game={game} review={review} />
       </>}
