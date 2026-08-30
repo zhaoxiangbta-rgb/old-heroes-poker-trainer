@@ -18,7 +18,7 @@ export type DecidePostflopV3Input = {
 type Candidate = Omit<StrategyAction, "frequency"> & { prior: number };
 const LIVE_RANGE_COMBO_BUDGET = 160;
 const LIVE_EQUITY_COMBO_BUDGET = 20;
-const BOT_EQUITY_COMBO_BUDGET = 6;
+const BOT_EQUITY_COMBO_BUDGET = 12;
 
 function abstractOpponentRange(
   range: readonly WeightedCombo[],
@@ -61,7 +61,7 @@ function currentEquity(input: DecidePostflopV3Input) {
   } satisfies MultiwayEquityResult;
   const fastBotBudget = input.request.deadlineMs <= 100;
   const comboBudget = fastBotBudget ? BOT_EQUITY_COMBO_BUDGET : LIVE_EQUITY_COMBO_BUDGET;
-  const runoutBudget = fastBotBudget ? 8 : 12;
+  const runoutBudget = 12;
   return estimateMultiwayEquity(
     input.request.state.heroHole,
     input.request.state.board,
@@ -201,6 +201,21 @@ function mix(candidates: Candidate[], pot: number, profile: ReturnType<typeof pr
   });
 }
 
+function removeExactRiverDominance(input: DecidePostflopV3Input, candidates: Candidate[]) {
+  if (input.request.state.street !== "river") return candidates;
+  const fold = candidates.find((candidate) => candidate.action === "fold");
+  const call = candidates.find((candidate) => candidate.action === "call");
+  if (!fold || !call) return candidates;
+  const tolerance = Math.max(0.01, input.request.state.pot * 0.02);
+  if (call.ev > fold.ev + tolerance) {
+    return candidates.filter((candidate) => candidate !== fold);
+  }
+  if (fold.ev > call.ev + tolerance) {
+    return candidates.filter((candidate) => candidate !== call);
+  }
+  return candidates;
+}
+
 export function decidePostflopV3(input: DecidePostflopV3Input): StrategyResult {
   const opponentRange = abstractOpponentRange(input.opponentRange);
   const boundedInput = { ...input, opponentRange };
@@ -216,7 +231,8 @@ export function decidePostflopV3(input: DecidePostflopV3Input): StrategyResult {
     candidates.unshift({ action: "fold", ev: 0, intent: "pot-control", prior: 0.45 });
   }
   candidates.push(...aggressiveCandidates(boundedInput, heroProfile));
-  const mixedActions = mix(candidates, input.request.state.pot, heroProfile);
+  const rationalCandidates = removeExactRiverDominance(boundedInput, candidates);
+  const mixedActions = mix(rationalCandidates, input.request.state.pot, heroProfile);
   const callAmount = input.request.state.legal.canCall
     ? input.request.state.legal.callAmount
     : 0;

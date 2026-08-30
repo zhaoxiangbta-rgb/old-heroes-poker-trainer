@@ -78,6 +78,13 @@ function actionLikelihood(action: PublicAction, board: Card[]) {
   };
 }
 
+function boardAtAction(board: readonly Card[], street: PublicAction["street"]) {
+  if (street === "preflop") return [];
+  if (street === "flop") return board.slice(0, 3);
+  if (street === "turn") return board.slice(0, 4);
+  return board.slice(0, 5);
+}
+
 export function createRangeLedger(state: PublicDecisionState): RangeLedger {
   const knownCards = [...state.heroHole, ...state.board];
   const bySeat: RangeLedger["bySeat"] = {};
@@ -103,7 +110,7 @@ export function applyPublicAction(
   const bySeat = { ...ledger.bySeat };
   bySeat[action.actorSeat] = updateRange(
     range,
-    actionLikelihood(action, state.board),
+    actionLikelihood(action, boardAtAction(state.board, action.street)),
     `${action.street} ${action.kind} ${(action.amount / Math.max(1, action.potBefore)).toFixed(2)} pot`,
   );
   return {

@@ -21,6 +21,7 @@ import { decidePostflopV3 } from "./v3/postflopStrategy";
 import { REFERENCE_SOLVER_PACK_V4 } from "./v4/solverReference";
 import { applySolverBlueprintV4, solverHistoryV4 } from "./v4/strategyV4";
 import { normalizeRangeStateV4 } from "./v4/rangeState";
+import { addPreflopProfileSupportV4 } from "./v4/preflopProfileSupport";
 import type {
   StrategyAction,
   StrategyEngine,
@@ -124,7 +125,7 @@ function preflopResult(request: StrategyRequest): StrategyResult {
   );
   const rangeCombos = Object.values(request.ranges.bySeat)
     .reduce((sum, range) => sum + range.length, 0);
-  return applyBoundedDeviation({
+  const adjusted = applyBoundedDeviation({
     ...baseline,
     rangeFacts: {
       ...baseline.rangeFacts,
@@ -133,6 +134,7 @@ function preflopResult(request: StrategyRequest): StrategyResult {
       rangeCombos,
     },
   }, request.state.tableProfileId, request.playerProfile);
+  return addPreflopProfileSupportV4(adjusted, request, node);
 }
 
 function postflopResult(request: StrategyRequest): StrategyResult | undefined {

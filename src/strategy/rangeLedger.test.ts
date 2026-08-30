@@ -83,4 +83,38 @@ describe("per-seat range ledger", () => {
       rangeFingerprint(initial.bySeat[actorSeat]),
     );
   });
+
+  it("never uses future community cards to reinterpret a preflop action", () => {
+    const game = newGame(121);
+    const base = buildPublicDecisionState(game, game.heroSeat);
+    const actor = base.players.find((player) => player.seat !== base.actingSeat)!;
+    const action = {
+      street: "preflop" as const,
+      actorSeat: actor.seat,
+      kind: "raise" as const,
+      amount: 5,
+      toAmount: 5,
+      potBefore: 3,
+      potAfter: 8,
+    };
+    const rangeFor = (board: typeof base.board) => {
+      const ledger = buildRangeLedger({
+        ...base,
+        street: "flop",
+        heroHole: ["Ah", "Kd"],
+        board,
+        actions: [action],
+      });
+      const range = ledger.bySeat[actor.seat];
+      const weight = (first: string, second: string) => range.find((combo) =>
+        combo.cards.includes(first as never) && combo.cards.includes(second as never)
+      )!.weight;
+      return weight("Qs", "Js") / weight("2s", "2c");
+    };
+
+    expect(rangeFor(["Qh", "Jd", "3c"])).toBeCloseTo(
+      rangeFor(["9h", "8d", "4c"]),
+      10,
+    );
+  });
 });

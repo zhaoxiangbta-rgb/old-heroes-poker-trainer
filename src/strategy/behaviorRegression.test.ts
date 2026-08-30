@@ -49,4 +49,33 @@ describe("strategy behavior regressions", () => {
         .toBeLessThanOrEqual(0.1500001);
     });
   });
+
+  it("lets a loose table profile widen the edge of an unopened late-position range", () => {
+    const make = (profile: "balanced" | "friends") => {
+      const request = replayFixture("preflop-deep-reraise", 37);
+      request.state.heroHole = ["Jh", "8d"];
+      request.state.tableProfileId = profile;
+      request.state.pot = 3;
+      request.state.currentBet = 2;
+      request.state.actions = [];
+      request.state.decisionIndex = 0;
+      const actor = request.state.players.find((player) => player.seat === request.state.actingSeat)!;
+      actor.position = "BTN";
+      actor.streetBet = 0;
+      actor.totalBet = 0;
+      actor.stack = 200;
+      request.state.legal = {
+        canFold: true, canCheck: false, canCall: true, canRaise: true,
+        callAmount: 2, minRaiseTo: 4, maxRaiseTo: 200,
+      };
+      request.ranges = snapshotRangeLedger(buildRangeLedger(request.state));
+      return createLocalStrategyEngine().decide(request);
+    };
+    const continueFrequency = (result: ReturnType<typeof make>) => result.actions
+      .filter((action) => action.action !== "fold")
+      .reduce((sum, action) => sum + action.frequency, 0);
+
+    expect(continueFrequency(make("balanced"))).toBe(0);
+    expect(continueFrequency(make("friends"))).toBeGreaterThanOrEqual(0.14);
+  });
 });
