@@ -51,7 +51,7 @@ describe("heads-up postflop behavior regressions", () => {
       const result = createLocalStrategyEngine().decide(checkedToRequest(street));
       const bet = result.actions.filter((item) => item.action === "bet")
         .reduce((sum, item) => sum + item.frequency, 0);
-      expect(result.strategyVersion).toBe("hu-postflop-abstract-v1");
+    expect(result.strategyVersion).toBe("strategy-v4.0.0");
       expect(bet).toBeGreaterThan(0);
       expect(bet).toBeLessThan(0.3);
     }

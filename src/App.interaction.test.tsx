@@ -20,7 +20,7 @@ import type { DecisionAssessment } from "./training/types";
 import { isActionCandidate } from "./game/actionDealing";
 import { normalizeGameplaySettings } from "./ui/tableThemes";
 import { DEFAULT_PLAYER_PROFILES } from "./policy/playerProfiles";
-import { APP_VERSION_LABEL } from "./appVersion";
+import { APP_VERSION_LABEL, STRATEGY_ENGINE_LABEL } from "./appVersion";
 
 const playbackHooks = vi.hoisted(() => ({
   actualUseGamePlayback: undefined as typeof useGamePlayback | undefined,
@@ -59,6 +59,7 @@ describe("desktop history repository integration", () => {
     render(<App repository={repository} />);
     expect(screen.getByText("开发预览 · 数据不持久")).toBeVisible();
     expect(screen.getByText(APP_VERSION_LABEL)).toBeVisible();
+    expect(screen.getByText(STRATEGY_ENGINE_LABEL)).toBeVisible();
     expect(screen.getByRole("slider", { name: "拖动下注金额" })).toBeVisible();
     expect(screen.getAllByText("余码 200").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "历史牌局" }));
@@ -254,6 +255,7 @@ function settledShowdownState() {
     winners: [state.players.find((player) => player.seat !== state.heroSeat)!.seat],
     summary: "青禾赢得 100 筹码",
   };
+  state.deepReviewStatus = "cancelled";
   return normalizeGameState(state);
 }
 
@@ -305,7 +307,9 @@ function reviewDetailState() {
     player.allIn = false;
     player.revealed = false;
   });
-  return advanceIfRoundComplete(state);
+  const reviewed = advanceIfRoundComplete(state);
+  reviewed.deepReviewStatus = "cancelled";
+  return reviewed;
 }
 
 function stubPlayback(

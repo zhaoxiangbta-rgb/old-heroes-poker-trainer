@@ -2,18 +2,25 @@ import { decideWithProfile } from "../policy/tableProfiles";
 import { sampleCandidate } from "../policy/mixedStrategy";
 import type { PolicyIntent } from "../policy/types";
 import { adaptLegacyDecision, toLegacyContext } from "./legacyAdapter";
-import { lookupPreflopBlueprint } from "./preflopBlueprint";
-import { classifyPreflopNode, recommendedRaiseTo } from "./preflopNode";
+import { classifyPreflopNode } from "./preflopNode";
 import { applyBoundedDeviation } from "./profileDeviation";
 import { lookupPostflopBlueprint } from "./postflopBlueprint";
 import { bucketPostflopHand } from "./postflopHandBucket";
 import { classifyHeadsUpPostflopNode } from "./postflopNode";
 import { resolveHeadsUpPostflop } from "./postflopResolver";
 import { classifyPostflopTexture } from "./postflopTexture";
+import { classifyPostflopSituation } from "./postflopSituation";
 import { estimateMultiwayEquity } from "./multiwayEquity";
 import { classifyMultiwayOuts, type MultiwayOutFacts } from "./multiwayOuts";
 import { multiwayPotExposure } from "./multiwayPots";
 import { resolveMultiwayStrategy } from "./multiwayStrategy";
+import { compilePreflopMatrix } from "./v3/preflopCompiler";
+import { lookupPreflopV3 } from "./v3/preflopLookup";
+import { PREFLOP_SOURCE_V3 } from "./v3/preflopSource";
+import { decidePostflopV3 } from "./v3/postflopStrategy";
+import { REFERENCE_SOLVER_PACK_V4 } from "./v4/solverReference";
+import { applySolverBlueprintV4, solverHistoryV4 } from "./v4/strategyV4";
+import { normalizeRangeStateV4 } from "./v4/rangeState";
 import type {
   StrategyAction,
   StrategyEngine,
@@ -24,6 +31,22 @@ import type {
 export type LocalStrategyEngineOptions = {
   decidePreflop?: (request: StrategyRequest) => StrategyResult;
 };
+
+const PREFLOP_MATRIX_V3 = compilePreflopMatrix(PREFLOP_SOURCE_V3);
+const STRATEGY_VERSION_V4 = "strategy-v4.0.0";
+
+function promoteToV4(result: StrategyResult, layer: string): StrategyResult {
+  if (result.strategyVersion.startsWith("strategy-v4")) return result;
+  return {
+    ...result,
+    strategyVersion: STRATEGY_VERSION_V4,
+    explanationFacts: {
+      ...result.explanationFacts,
+      baseStrategyVersion: result.strategyVersion,
+      v4Layer: layer,
+    },
+  };
+}
 
 function isLegal(action: StrategyAction, request: StrategyRequest) {
   const legal = request.state.legal;
@@ -82,65 +105,32 @@ function normalize(result: StrategyResult, request: StrategyRequest): StrategyRe
 
 function preflopResult(request: StrategyRequest): StrategyResult {
   const node = classifyPreflopNode(request.state);
-  const blueprint = lookupPreflopBlueprint(node, request.state.heroHole);
   const actor = request.state.players.find(
     (player) => player.seat === request.state.actingSeat,
   );
   if (!actor) throw new Error("公开状态缺少决策玩家");
-  const raiseTo = recommendedRaiseTo(node, request.state);
-  const mappedActions: StrategyAction[] = blueprint.actions.map((item) => {
-    if (item.action === "fold" || item.action === "check" || item.action === "call") {
-      return { ...item, action: item.action };
-    }
-    if (
-      !request.state.legal.canRaise &&
-      request.state.legal.canCall &&
-      request.state.legal.callAmount >= actor.stack
-    ) {
-      return { ...item, action: "call" };
-    }
-    const toAmount = item.action === "all-in"
-      ? request.state.legal.maxRaiseTo
-      : raiseTo;
-    return {
-      ...item,
-      action: toAmount === request.state.legal.maxRaiseTo ? "all-in" : "raise",
-      toAmount,
-      potFraction: (toAmount - actor.streetBet) / Math.max(1, request.state.pot),
-    };
-  });
-  const actions = [...mappedActions.reduce((byAction, action) => {
-    const key = `${action.action}:${action.toAmount ?? ""}`;
-    const previous = byAction.get(key);
-    if (!previous) {
-      byAction.set(key, { ...action });
-      return byAction;
-    }
-    const total = previous.frequency + action.frequency;
-    previous.ev = total > 0
-      ? (previous.ev * previous.frequency + action.ev * action.frequency) / total
-      : previous.ev;
-    previous.frequency = total;
-    if (action.intent === "value") previous.intent = "value";
-    return byAction;
-  }, new Map<string, StrategyAction>()).values()];
+  const baseline = lookupPreflopV3(
+    PREFLOP_MATRIX_V3,
+    node,
+    request.state.heroHole,
+    request.state.legal,
+    {
+      pot: request.state.pot,
+      currentBet: request.state.currentBet,
+      actorStreetBet: actor.streetBet,
+      actorStack: actor.stack,
+      bigBlind: request.state.blindLevel.big,
+    },
+  );
   const rangeCombos = Object.values(request.ranges.bySeat)
     .reduce((sum, range) => sum + range.length, 0);
   return applyBoundedDeviation({
-    actions,
-    confidence: blueprint.confidence,
-    source: blueprint.source,
-    nodeId: blueprint.nodeId,
-    strategyVersion: "preflop-abstract-v1",
+    ...baseline,
     rangeFacts: {
+      ...baseline.rangeFacts,
       opponentSeats: Object.keys(request.ranges.bySeat).length,
       lastActionIndex: request.ranges.lastActionIndex,
       rangeCombos,
-    },
-    explanationFacts: {
-      ...blueprint.explanationFacts,
-      raiseTo,
-      algorithm: "expert-baseline+boundary-regret-v1",
     },
   }, request.state.tableProfileId, request.playerProfile);
 }
@@ -159,11 +149,34 @@ function postflopResult(request: StrategyRequest): StrategyResult | undefined {
     request.state.board,
     opponentRange,
   );
+  if (opponentRange.length > 0) {
+    const opponentRangeV3 = opponentRange.map((combo) => ({
+      ...combo,
+      label: combo.cards.join(""),
+      history: [],
+    }));
+    const situation = classifyPostflopSituation(request.state, texture);
+    const baseline = decidePostflopV3({ request, situation, opponentRange: opponentRangeV3 });
+    const solver = applySolverBlueprintV4(
+      baseline,
+      request,
+      REFERENCE_SOLVER_PACK_V4,
+      solverHistoryV4(request, situation),
+      situation,
+    );
+    return applyBoundedDeviation(
+      solver ?? baseline,
+      request.state.tableProfileId,
+      request.playerProfile,
+      request.state.street,
+    );
+  }
   const base = lookupPostflopBlueprint(node, bucket, request.state);
   return applyBoundedDeviation(
     resolveHeadsUpPostflop(base, request, node, bucket),
     request.state.tableProfileId,
     request.playerProfile,
+    request.state.street,
   );
 }
 
@@ -204,6 +217,7 @@ function multiwayPostflopResult(request: StrategyRequest): StrategyResult | unde
     resolveMultiwayStrategy(request, equity, outs, exposure),
     request.state.tableProfileId,
     request.playerProfile,
+    request.state.street,
   );
 }
 
@@ -212,27 +226,40 @@ export function createLocalStrategyEngine(
 ): StrategyEngine {
   const decidePreflop = options.decidePreflop ?? preflopResult;
   return {
-    decide(request) {
-      if (request.deadlineMs <= 0) return safeResult(request, "决策预算已用尽");
+    decide(originalRequest) {
+      const ranges = normalizeRangeStateV4(
+        originalRequest.ranges,
+        [...originalRequest.state.heroHole, ...originalRequest.state.board],
+      );
+      const request = { ...originalRequest, ranges };
+      const attachRangeState = (result: StrategyResult): StrategyResult => ({
+        ...result,
+        rangeFacts: {
+          ...result.rangeFacts,
+          rangeStateHash: ranges.hash,
+          normalizedRangeCombos: ranges.comboCount,
+        },
+      });
+      if (request.deadlineMs <= 0) return attachRangeState(safeResult(request, "决策预算已用尽"));
       try {
         if (request.state.street === "preflop") {
-          return normalize(decidePreflop(request), request);
+          return attachRangeState(promoteToV4(normalize(decidePreflop(request), request), "preflop-matrix"));
         }
         const postflop = postflopResult(request);
-        if (postflop) return normalize(postflop, request);
+        if (postflop) return attachRangeState(promoteToV4(normalize(postflop, request), "heads-up-solver-resolver"));
         const multiway = multiwayPostflopResult(request);
-        if (multiway) return normalize(multiway, request);
+        if (multiway) return attachRangeState(promoteToV4(normalize(multiway, request), "multiway-range-resolver"));
         const decision = decideWithProfile(
           toLegacyContext(request),
           request.state.tableProfileId,
           request.playerProfile,
         );
-        return normalize(adaptLegacyDecision(decision, request), request);
+        return attachRangeState(promoteToV4(normalize(adaptLegacyDecision(decision, request), request), "expert-safe-resolver"));
       } catch (error) {
-        return safeResult(
+        return attachRangeState(safeResult(
           request,
           error instanceof Error ? error.message : "本地策略异常",
-        );
+        ));
       }
     },
   };

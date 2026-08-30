@@ -1,4 +1,4 @@
-import { bestHand, compareHands } from "../engine/evaluator";
+import { bestHand } from "../engine/evaluator";
 import { parseCard, type Card } from "../engine/cards";
 
 export type MadeHand =
@@ -68,6 +68,18 @@ function madeName(hole: [Card, Card], board: Card[], category: number): MadeHand
   return (["straight", "flush", "full-house", "quads", "straight-flush"] as MadeHand[])[category - 4];
 }
 
+function publicBoardCategory(board: Card[]): number {
+  if (board.length === 5) return bestHand(board).category;
+  const groups = [...counts(board.map((card) => parseCard(card).rank)).values()]
+    .sort((first, second) => second - first);
+  if (groups[0] === 4) return 7;
+  if (groups[0] === 3 && groups[1] === 2) return 6;
+  if (groups[0] === 3) return 3;
+  if (groups[0] === 2 && groups[1] === 2) return 2;
+  if (groups[0] === 2) return 1;
+  return 0;
+}
+
 export function extractHandFeatures(hole: [Card, Card], board: Card[]): HandFeatures {
   if (board.length < 3 || board.length > 5) throw new Error("翻后特征需要 3 至 5 张公共牌");
   const all = [...hole, ...board];
@@ -96,8 +108,11 @@ export function extractHandFeatures(hole: [Card, Card], board: Card[]): HandFeat
     maxBoardSuit * 0.13 + connected * 0.09 + (pairedBoard ? 0.08 : 0),
   );
   const kicker = Math.max(...hole.map((card) => parseCard(card).rank)) / 14;
-  const publicMadeHand =
-    board.length === 5 && compareHands(hand, bestHand(board)) === 0;
+  const boardCategory = publicBoardCategory(board);
+  // A made category that already exists on the board is shared by everyone.
+  // Hole-card kickers can still decide the winner, but they must not be
+  // described or strategized as if the player privately made that pair/trips.
+  const publicMadeHand = boardCategory > 0 && hand.category === boardCategory;
   const nutBlockers = hole.filter((card) => {
     const parsedCard = parseCard(card);
     return parsedCard.rank === 14 && (boardSuitCounts.get(parsedCard.suit) ?? 0) >= 2;

@@ -7,11 +7,22 @@ import { createLocalStrategyEngine, selectStrategyAction } from "../strategy/eng
 import { buildPublicDecisionState } from "../strategy/publicState";
 import { buildRangeLedger, snapshotRangeLedger } from "../strategy/rangeLedger";
 import type { StrategyAction, StrategyResult } from "../strategy/types";
+import { analyzePokerFactsV4 } from "../strategy/v4/pokerFacts";
+import {
+  createStreetPlanV4,
+  updateStreetPlanV4,
+  type StreetPlanV4,
+} from "../strategy/v4/streetPlan";
 import type {
   AssessmentStatus,
   DecisionAssessment,
   TrainingTarget,
 } from "../training/types";
+import type {
+  DeepDecisionInput,
+  DeepHandReview,
+  DeepReviewStatus,
+} from "../review/types";
 import {
   DEFAULT_PLAYER_PROFILES,
   effectivePlayerProfile,
@@ -115,9 +126,10 @@ export type StrategyDecisionRecord = {
   selectedAction: StrategyAction["action"];
   sampled: number;
   result: StrategyResult;
+  streetPlan?: StreetPlanV4;
 };
 export type GameState = {
-  version: 7;
+  version: 9;
   strategyVersion: string;
   seed: number;
   rng: number;
@@ -149,6 +161,10 @@ export type GameState = {
   trainingTarget: TrainingTarget;
   assessments: DecisionAssessment[];
   assessmentStatus: AssessmentStatus;
+  reviewDecisionInputs: DeepDecisionInput[];
+  deepReviewStatus: DeepReviewStatus;
+  deepReview?: DeepHandReview;
+  deepReviewError?: string;
 };
 export type NewGameOptions = {
   tableProfileId?: TableProfileId;
@@ -538,11 +554,21 @@ function legacyDecisionRecord(
 function commitBot(s: GameState, seat: number) {
   const publicState = buildPublicDecisionState(s, seat);
   const ranges = snapshotRangeLedger(buildRangeLedger(publicState));
+  const facts = publicState.street === "preflop"
+    ? undefined
+    : analyzePokerFactsV4(publicState.heroHole, publicState.board);
+  const priorPlan = [...s.strategyDecisions]
+    .reverse()
+    .find((record) => record.seat === seat && record.streetPlan)?.streetPlan;
+  const streetPlan = priorPlan && facts && priorPlan.createdAtStreet !== publicState.street
+    ? updateStreetPlanV4(priorPlan, { street: publicState.street, facts })
+    : priorPlan;
   const result = createLocalStrategyEngine().decide({
     state: publicState,
     ranges,
-    deadlineMs: 250,
+    deadlineMs: 80,
     playerProfile: s.players[seat].profile,
+    streetPlan,
   });
   if (result.source !== "safe-fallback") s.strategyVersion = result.strategyVersion;
   const selection = selectStrategyAction(
@@ -557,6 +583,17 @@ function commitBot(s: GameState, seat: number) {
       ? { type: "call" }
       : { type: "fold" };
   const strategyAction = selection.action;
+  const selectedPlan = facts
+    ? (streetPlan?.status === "continue" || streetPlan?.status === "complete"
+        ? streetPlan
+        : createStreetPlanV4({
+            street: publicState.street,
+            action: strategyAction,
+            facts,
+            targetCombos: [],
+            foldTargets: [],
+          }))
+    : undefined;
   const requestedAction = gameActionFromStrategy(strategyAction);
   const action = isLegalPolicyAction(requestedAction, legal)
     ? requestedAction
@@ -573,6 +610,7 @@ function commitBot(s: GameState, seat: number) {
     selectedAction: strategyAction.action,
     sampled: selection.sampled,
     result,
+    streetPlan: selectedPlan,
   });
   s.policyDecisions.push({
     seat,
@@ -738,7 +776,7 @@ export function newGame(
     },
   );
   const s: GameState = {
-    version: 7,
+    version: 9,
     strategyVersion: "preflop-abstract-v1",
     seed,
     rng: shuffledDeck.rng,
@@ -769,6 +807,8 @@ export function newGame(
     trainingTarget: options.trainingTarget ?? { mode: "none" },
     assessments: [],
     assessmentStatus: "ready",
+    reviewDecisionInputs: [],
+    deepReviewStatus: "not-started",
   };
   const firstToDeal = playerCount === 2 ? button : (button + 1) % playerCount;
   for (let n = 0; n < 2; n++)
@@ -787,11 +827,12 @@ export function act(state: GameState, action: GameAction): GameState {
 export function normalizeGameState(state: GameState): GameState {
   const raw = structuredClone(state) as unknown as Record<string, unknown>;
   if (raw.version === 6) {
-    raw.version = 7;
+    raw.version = 9;
     raw.strategyVersion = "legacy-v6";
     raw.strategyDecisions = [];
   }
-  if (raw.version !== 7) throw new Error("牌局数据版本不兼容");
+  if (raw.version === 7 || raw.version === 8) raw.version = 9;
+  if (raw.version !== 9) throw new Error("牌局数据版本不兼容");
   const s = raw as GameState & {
     raiseToReopen?: number[];
     policyDecisions?: PolicyDecisionRecord[];
@@ -802,6 +843,10 @@ export function normalizeGameState(state: GameState): GameState {
     assessmentStatus?: AssessmentStatus;
     playerProfiles?: PlayerProfile[];
     friendBankrolls?: FriendBankroll[];
+    reviewDecisionInputs?: DeepDecisionInput[];
+    deepReviewStatus?: DeepReviewStatus;
+    deepReview?: DeepHandReview;
+    deepReviewError?: string;
   };
   if (!(["balanced", "friends", "loose-wild"] as string[]).includes(s.tableProfileId ?? ""))
     s.tableProfileId = "balanced";
@@ -865,6 +910,11 @@ export function normalizeGameState(state: GameState): GameState {
       : s.strategyVersion !== "legacy-v6",
   }));
   s.assessmentStatus ??= "ready";
+  if (!Array.isArray(s.reviewDecisionInputs)) s.reviewDecisionInputs = [];
+  s.deepReviewStatus ??= "not-started";
+  if (s.deepReview && (!s.deepReview.stateHash || s.deepReview.status !== "completed"))
+    s.deepReview = undefined;
+  if (s.deepReviewStatus !== "failed") s.deepReviewError = undefined;
   return sync(s as GameState);
 }
 export function isHeroTurn(state: GameState) {
@@ -972,7 +1022,13 @@ export function bankrollsForNextHand(
   };
 }
 export function nextHand(state: GameState, options: NewGameOptions = {}) {
-  return nextHandAtSeed(state, state.seed + 1, options);
+  let first: GameState | undefined;
+  for (let offset = 1; offset <= 12; offset += 1) {
+    const candidate = nextHandAtSeed(state, state.seed + offset, options);
+    first ??= candidate;
+    if (candidate.phase === "playing") return candidate;
+  }
+  return first!;
 }
 export function streetName(street: Street) {
   return STREET_CN[street];

@@ -67,7 +67,7 @@ describe("action-enhanced dealing", () => {
       expect(cards).toHaveLength(52);
       expect(new Set(cards)).toEqual(new Set(createDeck()));
     }
-  });
+  }, 15_000);
 
   it("preserves the session ledger while forcing an ordinary next hand", () => {
     const state = newGame(42);

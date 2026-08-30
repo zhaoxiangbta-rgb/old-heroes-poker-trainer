@@ -14,6 +14,7 @@ import type {
   DecisionAssessment,
   WeaknessTag,
 } from "./types";
+import type { DeepDecisionReview } from "../review/types";
 
 export type AssessmentContext = {
   street: GameState["street"];
@@ -216,9 +217,21 @@ export function assessFromStrategy(
   result: StrategyResult,
 ): DecisionAssessment {
   const candidates = policyCandidates(result);
+  const risk = Math.max(1, before.pot, before.legal.callAmount);
+  if (action.type === "raise" && !candidates.some((candidate) => candidate.action.type === "raise")) {
+    const floorEv = candidates.length
+      ? Math.min(...candidates.map((candidate) => candidate.ev))
+      : 0;
+    candidates.push({
+      action: { type: "raise", to: action.to },
+      label: "off-tree-raise",
+      ev: floorEv - risk * 0.12,
+      probability: 0,
+      intent: "bluff",
+    });
+  }
   const best = [...candidates].sort((a, b) => b.ev - a.ev)[0];
   const actualCandidate = matchingCandidate(action, candidates) ?? best;
-  const risk = Math.max(1, before.pot, before.legal.callAmount);
   const normalizedEvLoss = Math.max(0, (best.ev - actualCandidate.ev) / risk);
   const scored = result.source !== "safe-fallback";
   const severity = scored ? severityFor(normalizedEvLoss) : "good";
@@ -269,5 +282,46 @@ export function assessFromStrategy(
       strategyConfidence: result.confidence,
     },
     scored,
+  };
+}
+
+export function assessmentFromDeepDecision(
+  handNo: number,
+  decision: DeepDecisionReview,
+): DecisionAssessment {
+  const best = decision.candidates.find((candidate) =>
+    JSON.stringify(candidate.action) === JSON.stringify(decision.recommended),
+  ) ?? decision.candidates[0];
+  const severity = severityFor(decision.normalizedEvLoss);
+  return {
+    id: decision.id,
+    handNo,
+    logIndex: decision.logIndex,
+    street: decision.street,
+    actual: decision.actual,
+    recommended: decision.recommended,
+    candidates: decision.candidates.map((candidate) => ({
+      action: candidate.action,
+      label: candidate.action.type,
+      ev: candidate.ev,
+      probability: candidate.frequency,
+      intent: candidate.intent,
+    })),
+    normalizedEvLoss: decision.normalizedEvLoss,
+    severity,
+    intent: best?.intent ?? "pot-control",
+    tags: decision.tags,
+    coreRules: [decision.coreRule],
+    facts: {
+      relevantTags: decision.tags,
+      equity: decision.equity,
+      requiredEquity: decision.requiredEquity,
+      cleanOuts: decision.cleanOuts,
+      dirtyOuts: decision.dirtyOuts,
+      reviewPrecision: decision.precision,
+      reviewSamples: decision.samples,
+      reviewConfidence: decision.confidence,
+    },
+    scored: true,
   };
 }

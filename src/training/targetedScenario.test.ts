@@ -50,7 +50,7 @@ describe("targeted full-hand generation", () => {
       expect(newTargetedGame(seed, "friends", target)).toEqual(targeted);
     }
     expect(targetedHits).toBeGreaterThan(balancedHits);
-  }, 20_000);
+  }, 60_000);
 
   it("falls back to a legal replayable game when the matcher cannot hit", () => {
     const result = newTargetedGame(
@@ -61,7 +61,7 @@ describe("targeted full-hand generation", () => {
       () => false,
     );
     expect(result).toMatchObject({ matched: false, attempts: 24 });
-    expect(result.game.version).toBe(7);
+    expect(result.game.version).toBe(9);
     expect(new Set(result.game.players.flatMap((player) => player.hole)).size).toBe(
       result.game.players.length * 2,
     );

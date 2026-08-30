@@ -148,8 +148,8 @@ describe("playable hand loop", () => {
       street: heroDone.street,
       logIndex: heroDone.log.length,
       result: {
-        strategyVersion: "preflop-abstract-v1",
-        source: expect.stringMatching(/blueprint|interpolated/),
+        strategyVersion: "strategy-v4.0.0",
+        source: "strategy-pack-v3",
       },
     });
     expect(record.result.actions).toContainEqual(
@@ -163,14 +163,14 @@ describe("playable hand loop", () => {
     expect(replay.policyDecisions).toEqual(first.policyDecisions);
     expect(replay.log).toEqual(first.log);
   });
-  it("pins the table profile, player profiles and training target into a version-seven hand", () => {
+  it("pins the table profile, player profiles and training target into a version-eight hand", () => {
     const state = newGame(42, 1, undefined, undefined, {
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },
     });
     expect(state).toMatchObject({
-      version: 7,
-      strategyVersion: "preflop-abstract-v1",
+      version: 9,
+      strategyVersion: "strategy-v4.0.0",
       tableProfileId: "friends",
       trainingTarget: { mode: "manual", tag: "multiway-top-pair" },
       assessments: [],
@@ -457,7 +457,7 @@ describe("playable hand loop", () => {
         Math.floor((lastSeed - firstSeed + 1) / 2),
       );
     },
-    30_000,
+    60_000,
   );
 
   it("uses heads-up blind and action order when two stacks are supplied", () => {

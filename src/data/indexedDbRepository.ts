@@ -71,6 +71,21 @@ export function createIndexedDbRepository({
         await transactionDone(tx);
       } finally { db.close(); }
     },
+    async replaceHand(hand) {
+      const db = await open();
+      try {
+        const tx = db.transaction("hands", "readwrite");
+        const store = tx.objectStore("hands");
+        const key = handKey(hand);
+        const current = await requestResult<{ key: string; savedAt: number; hand: GameState } | undefined>(store.get(key));
+        if (!current) {
+          tx.abort();
+          throw new Error("待更新牌局不存在");
+        }
+        store.put({ key, savedAt: current.savedAt, hand: normalizeGameState(structuredClone(hand)) });
+        await transactionDone(tx);
+      } finally { db.close(); }
+    },
     async clearHands() {
       const db = await open();
       try { const tx = db.transaction("hands", "readwrite"); tx.objectStore("hands").clear(); await transactionDone(tx); }

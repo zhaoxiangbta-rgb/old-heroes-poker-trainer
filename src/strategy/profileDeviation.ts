@@ -1,6 +1,8 @@
 import type { HandPlayerProfile } from "../policy/playerProfiles";
 import type { TableProfileId } from "../policy/tableProfiles";
 import type { StrategyAction, StrategyResult } from "./types";
+import type { Street } from "../game/game";
+import { adjustProfileV4 } from "./v4/profileAdjustment";
 
 const MAX_SHIFT = 0.15;
 
@@ -51,25 +53,110 @@ function projectBounded(base: number[], desired: number[]) {
   return result;
 }
 
+function preventNegativeEvTop(actions: StrategyAction[], frequencies: number[]) {
+  const topIndex = frequencies.reduce(
+    (best, value, index) => value > frequencies[best] ? index : best,
+    0,
+  );
+  if (actions[topIndex].ev >= 0) return frequencies;
+  const safeIndexes = actions.map((action, index) => action.ev >= 0 ? index : -1)
+    .filter((index) => index >= 0);
+  if (!safeIndexes.length) return frequencies;
+  const safeIndex = safeIndexes.reduce(
+    (best, index) => frequencies[index] > frequencies[best] ? index : best,
+    safeIndexes[0],
+  );
+  const needed = (frequencies[topIndex] - frequencies[safeIndex]) / 2 + 1e-9;
+  const transfer = Math.min(
+    needed,
+    frequencies[topIndex] - Math.max(0, actions[topIndex].frequency - MAX_SHIFT),
+    Math.min(1, actions[safeIndex].frequency + MAX_SHIFT) - frequencies[safeIndex],
+  );
+  if (transfer <= 0) return frequencies;
+  const result = [...frequencies];
+  result[topIndex] -= transfer;
+  result[safeIndex] += transfer;
+  return result;
+}
+
 export function applyBoundedDeviation(
   result: StrategyResult,
   tableProfileId: TableProfileId,
   playerProfile?: HandPlayerProfile,
+  street: Street = "preflop",
 ): StrategyResult {
-  if (tableProfileId === "balanced" && !playerProfile) return result;
-  const base = result.actions.map((action) => action.frequency);
-  const raw = result.actions.map((action) =>
+  const baselineActions = (result.baselineActions ?? result.actions).map((action) => ({ ...action }));
+  if (street !== "preflop") {
+    const adjusted = adjustProfileV4({
+      actions: baselineActions,
+      tableProfileId,
+      playerProfile,
+      street,
+    });
+    const maxShift = Math.max(...adjusted.actions.map((action, index) =>
+      Math.abs(action.frequency - baselineActions[index].frequency)
+    ));
+    return {
+      ...result,
+      actions: adjusted.actions,
+      baselineActions,
+      adjustment: {
+        applied: maxShift > 1e-9,
+        tableProfileId,
+        playerArchetype: playerProfile?.archetype ?? "none",
+        maxShift: Number(maxShift.toFixed(6)),
+        reasonCodes: adjusted.adjustments
+          .filter((item) => Math.abs(item.after - item.before) > 1e-9)
+          .map((item) => item.reason),
+      },
+      explanationFacts: {
+        ...result.explanationFacts,
+        tableProfile: tableProfileId,
+        playerProfile: playerProfile?.archetype ?? "none",
+        profileDeviationMax: Number(maxShift.toFixed(6)),
+      },
+    };
+  }
+  if (tableProfileId === "balanced" && !playerProfile) {
+    return {
+      ...result,
+      baselineActions,
+      adjustment: {
+        applied: false,
+        tableProfileId,
+        playerArchetype: "none",
+        maxShift: 0,
+        reasonCodes: [],
+      },
+    };
+  }
+  const base = baselineActions.map((action) => action.frequency);
+  const raw = baselineActions.map((action) =>
     action.frequency * tableMultiplier(action, tableProfileId) * playerMultiplier(action, playerProfile)
   );
   const total = raw.reduce((sum, value) => sum + value, 0);
   const desired = total > 0 ? raw.map((value) => value / total) : base;
-  const frequencies = projectBounded(base, desired);
+  const frequencies = preventNegativeEvTop(
+    baselineActions,
+    projectBounded(base, desired),
+  );
   const profileDeviationMax = Math.max(
     ...frequencies.map((value, index) => Math.abs(value - base[index])),
   );
   return {
     ...result,
-    actions: result.actions.map((action, index) => ({
+    baselineActions,
+    adjustment: {
+      applied: profileDeviationMax > 1e-9,
+      tableProfileId,
+      playerArchetype: playerProfile?.archetype ?? "none",
+      maxShift: Number(profileDeviationMax.toFixed(6)),
+      reasonCodes: [
+        ...(tableProfileId !== "balanced" ? [`table:${tableProfileId}`] : []),
+        ...(playerProfile ? [`player:${playerProfile.archetype}`] : []),
+      ],
+    },
+    actions: baselineActions.map((action, index) => ({
       ...action,
       frequency: frequencies[index],
     })),

@@ -32,10 +32,21 @@ function assessment(
 function handWith(items: DecisionAssessment[]): GameState {
   const hand = newGame(items[0]?.handNo ?? 1);
   hand.assessments = items;
+  hand.deepReviewStatus = "completed";
   return hand;
 }
 
 describe("weakness curriculum", () => {
+  it("excludes hands whose deep review did not complete", () => {
+    const cancelled = handWith([assessment("overcalling", 1, 0.2)]);
+    cancelled.deepReviewStatus = "cancelled";
+    const failed = handWith([assessment("overcalling", 2, 0.2)]);
+    failed.deepReviewStatus = "failed";
+    expect(
+      summarizeWeaknesses([cancelled, failed]).every((item) => item.samples === 0),
+    ).toBe(true);
+  });
+
   it("does not switch normal training to an automatic specialty after one hand", () => {
     const summaries = summarizeWeaknesses([
       handWith(Array.from({ length: 6 }, (_, i) =>

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { assessHeroDecision } from "../training/assessment";
+import { captureHeroDecision } from "../review/capture";
 import { isHeroTurn, normalizeGameState, type GameAction, type GameState } from "./game";
+import { buildPreActionInsightInput, preActionInsightHash } from "../insights/snapshot";
+import type { PersistedPreActionInsight, PreActionInsightState } from "../insights/types";
 import {
   planInitialDeal,
   planAfterHero,
@@ -28,6 +30,44 @@ export function formatReceipt(state: GameState, action: GameAction) {
   return state.currentBet === 0
     ? `✓ 下注到 ${action.to}`
     : `✓ 加注到 ${action.to}`;
+}
+
+function persistableInsight(game: GameState, state?: PreActionInsightState): PersistedPreActionInsight | undefined {
+  if (!state?.key || (!state.exact && !state.ranges?.length && !state.responses?.length)) return;
+  const input = buildPreActionInsightInput(game);
+  if (
+    state.key.handNo !== input.handNo || state.key.seed !== input.seed ||
+    state.key.street !== input.street || state.key.logIndex !== input.logIndex ||
+    state.key.stateHash !== preActionInsightHash(input)
+  ) return;
+  const common = {
+    key: structuredClone(state.key),
+    sampleSeed: game.seed,
+    sampleBudget: 384,
+    exact: state.exact ? structuredClone(state.exact) : undefined,
+    rangeSummaries: state.ranges?.map((range) => {
+      const summary = { ...range };
+      delete (summary as Partial<typeof range>).ranges;
+      return structuredClone(summary);
+    }),
+    responses: state.responses ? structuredClone(state.responses) : undefined,
+    confidence: state.confidence,
+  };
+  if (state.analysis) {
+    return {
+      schemaVersion: 2,
+      calculatorVersion: "pre-action-analysis-v2",
+      rangeModelVersion: "public-range-v2",
+      ...common,
+      analysis: structuredClone(state.analysis),
+    };
+  }
+  return {
+    schemaVersion: 1,
+    calculatorVersion: "pre-action-exact-v1",
+    rangeModelVersion: "public-range-v1",
+    ...common,
+  };
 }
 
 function prefersReducedMotion() {
@@ -152,7 +192,7 @@ export function useGamePlayback(
   }, []);
 
   const submit = useCallback(
-    (action: GameAction) => {
+    (action: GameAction, insightState?: PreActionInsightState) => {
       if (lockedRef.current || !isHeroTurn(game)) return false;
       lockedRef.current = true;
       setBusy(true);
@@ -163,12 +203,11 @@ export function useGamePlayback(
         if (generation !== generationRef.current) return;
         try {
           const assessedGame = structuredClone(game);
-          try {
-            assessedGame.assessments.push(assessHeroDecision(game, action));
-            assessedGame.assessmentStatus = "ready";
-          } catch {
-            assessedGame.assessmentStatus = "failed";
-          }
+          assessedGame.reviewDecisionInputs.push({
+            ...captureHeroDecision(game),
+            actual: structuredClone(action),
+            preActionInsight: persistableInsight(game, insightState),
+          });
           const frames = planAfterHero(
             assessedGame,
             action,

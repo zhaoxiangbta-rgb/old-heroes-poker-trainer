@@ -1,0 +1,23 @@
+{
+  "solver": {
+    "project": "amaster97/poker_solver",
+    "commit": "f78f1b2bc338dd8cbb5226ecb8398bbdb3635676",
+    "release": "1.11.0",
+    "license": "MIT"
+  },
+  "defaults": { "street": "river", "potBb": 10, "stackBb": 100, "iterations": 100 },
+  "spots": [
+    { "id": "dry-a-top", "board": "As 7c 2d Kh 5s", "hero": "AhTd", "villainRange": "QQ,JJ,TT,99,88,AQo,KQs,76s,65s" },
+    { "id": "dry-a-top-diagnostic", "board": "As 7c 2d Kh 5s", "hero": "AhTd", "villainRange": "QcQh", "iterations": 20 },
+    { "id": "dry-a-air", "board": "As 7c 2d Kh 5s", "hero": "Jd9d", "villainRange": "QQ,JJ,TT,99,88,AQo,KQs,76s,65s" },
+    { "id": "paired-k-trips", "board": "Ks 7h 7d 4c 2h", "hero": "Kh9c", "villainRange": "QQ,JJ,TT,99,88,KQs,QJs,JTs,76s,65s" },
+    { "id": "paired-k-medium", "board": "Ks 7h 7d 4c 2h", "hero": "Kc9c", "villainRange": "QQ,JJ,TT,99,88,76s,65s", "iterations": 200 },
+    { "id": "paired-k-air", "board": "Ks 7h 7d 4c 2h", "hero": "Qc9c", "villainRange": "AA,QQ,JJ,TT,99,88,KQs,QJs,JTs,76s,65s" },
+    { "id": "wet-straight", "board": "Ts 9h 8d 5c 2h", "hero": "QcJc", "villainRange": "AA,KK,QQ,JJ,TT,99,88,ATs,KQs,QJs,JTs,T9s,98s,87s,76s" },
+    { "id": "wet-two-pair", "board": "Ts 9h 8d 5c 2h", "hero": "Tc8c", "villainRange": "AA,KK,QQ,JJ,TT,99,88,ATs,KQs,QJs,JTs,T9s,98s,87s,76s" },
+    { "id": "monotone-nut-blocker", "board": "Qs Js 9s 4s 2h", "hero": "AsKd", "villainRange": "AA,KK,QQ,JJ,TT,99,88,AKs,AQs,AJs,KQs,QJs,JTs,T9s,98s,87s" },
+    { "id": "monotone-air", "board": "Qs Js 9s 4s 2h", "hero": "AcKd", "villainRange": "AA,KK,QQ,JJ,TT,99,88,AKs,AQs,AJs,KQs,QJs,JTs,T9s,98s,87s" },
+    { "id": "broadway-nut", "board": "Ks Qc Jh Ts 4d", "hero": "Ac9c", "villainRange": "AA,KK,QQ,JJ,TT,99,88,AKs,AQs,AJs,KQs,QJs,JTs,T9s,98s" },
+    { "id": "broadway-board", "board": "Ks Qc Jh Ts 4d", "hero": "8c7c", "villainRange": "AA,KK,QQ,JJ,TT,99,88,AKs,AQs,AJs,KQs,QJs,JTs,T9s,98s" }
+  ]
+}

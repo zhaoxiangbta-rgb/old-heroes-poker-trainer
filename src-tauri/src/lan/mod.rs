@@ -49,7 +49,7 @@ mod tests {
         let headers = String::from_utf8_lossy(&response[..header_end]);
         assert!(headers.contains("Content-Encoding: gzip"));
         let compressed_size = response.len() - header_end;
-        assert!(compressed_size < 150_000, "compressed page must stay small enough for a stable phone transfer: {compressed_size} bytes");
+        assert!(compressed_size < 160_000, "compressed page including pre-action insights must stay within its phone transfer budget: {compressed_size} bytes");
         service.stop().expect("stop");
     }
 }

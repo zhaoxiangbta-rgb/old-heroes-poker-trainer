@@ -14,15 +14,19 @@ import { PokerTable } from "./components/PokerTable";
 import { MobilePokerTable } from "./mobile/MobilePokerTable";
 import { ActionControls } from "./components/ActionControls";
 import { MobileFloatingControls } from "./mobile/MobileFloatingControls";
+import { MobileInsightSummary } from "./mobile/MobileInsightSummary";
 import { HistoryPage } from "./components/HistoryPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { SpecialTrainingPage } from "./components/SpecialTrainingPage";
 import { WeaknessReportPage } from "./components/WeaknessReportPage";
-import { DecisionReview } from "./components/DecisionReview";
+import { DeepHandReviewView } from "./components/DeepHandReview";
+import { DeepReviewProgress } from "./components/DeepReviewProgress";
 import { ResizableWorkspace } from "./components/ResizableWorkspace";
 import { createSoundPlayer, soundCueForPlayback } from "./game/sound";
 import type { DecisionFacts } from "./engine/analysis";
 import { useDeferredDecisionFacts } from "./game/useDeferredDecisionFacts";
+import { usePreActionInsights } from "./insights/usePreActionInsights";
+import { PreActionInsights } from "./components/PreActionInsights";
 import { createRepository, type DesktopRepository } from "./data/repository";
 import type { GameplaySettings } from "./data/types";
 import { normalizeGameplaySettings } from "./ui/tableThemes";
@@ -30,9 +34,13 @@ import { TABLE_PROFILES } from "./policy/tableProfiles";
 import { summarizeWeaknesses } from "./training/curriculum";
 import { newTargetedGame } from "./training/targetedScenario";
 import { WEAKNESS_DEFINITIONS, type TrainingTarget, type WeaknessTag } from "./training/types";
-import { APP_VERSION_LABEL } from "./appVersion";
+import { APP_VERSION_LABEL, STRATEGY_ENGINE_LABEL, STRATEGY_ENGINE_VERSION } from "./appVersion";
+import { useDeepReview } from "./review/useDeepReview";
+import { assessmentFromDeepDecision } from "./training/assessment";
+import type { DeepReviewStatus } from "./review/types";
 import "./training.css";
 import "./app-version.css";
+import "./pre-action-insights.css";
 const nav = ["继续训练", "专项训练", "弱点报告", "历史牌局", "设置"] as const;
 type Page = (typeof nav)[number];
 const SUIT_SYMBOL: Record<string, string> = {
@@ -74,8 +82,11 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
     [history, setHistory] = useState<GameState[]>([]),
     [historyLoading, setHistoryLoading] = useState(true),
     [gameplaySettings, setGameplaySettings] = useState<GameplaySettings>(() => normalizeGameplaySettings({})),
-    [storageNotice, setStorageNotice] = useState("");
+    [storageNotice, setStorageNotice] = useState(""),
+    [reviewReadyKey, setReviewReadyKey] = useState(""),
+    [reviewRuntimeKey, setReviewRuntimeKey] = useState("");
   const savedHands = useRef(new Set<string>());
+  const autoReviewHands = useRef(new Set<string>());
   const sound = useRef(createSoundPlayer({ enabled: soundEnabled }));
   const { game, phase, frame, receipt, busy, visualTokens, recentActions, submit: playAction, replaceGame } =
     useGamePlayback(initialGame, { animateInitialDeal: !mobile });
@@ -83,7 +94,51 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
   const noActionPlayback = isNoActionPlayback(phase);
   const handComplete = game.phase === "review" && phase === "hand-complete";
   const facts = useDeferredDecisionFacts(game, phase === "hero-turn");
+  const preActionInsights = usePreActionInsights(game, phase === "hero-turn");
   const weaknessSummaries = useMemo(() => summarizeWeaknesses(history), [history]);
+  const handKey = `${game.seed}:${game.handNo}`;
+  const deepReviewInput = useMemo(() => ({
+    handNo: game.handNo,
+    seed: game.seed,
+    strategyVersion: STRATEGY_ENGINE_VERSION,
+    calculatorVersion: "deep-review-v4",
+    decisions: game.reviewDecisionInputs,
+  }), [game.handNo, game.reviewDecisionInputs, game.seed]);
+  const {
+    status: deepReviewRuntimeStatus,
+    progress: deepReviewProgress,
+    error: deepReviewRuntimeError,
+    start: launchDeepReview,
+    cancel: stopDeepReview,
+  } = useDeepReview({
+    input: deepReviewInput,
+    onCompleted: (review) => {
+      if (review.seed !== game.seed || review.handNo !== game.handNo) return;
+      const reviewed = structuredClone(game);
+      reviewed.deepReview = review;
+      reviewed.deepReviewStatus = "completed";
+      reviewed.deepReviewError = undefined;
+      reviewed.assessments = review.decisions.map((decision) =>
+        assessmentFromDeepDecision(reviewed.handNo, decision),
+      );
+      reviewed.assessmentStatus = "ready";
+      replaceGame(reviewed);
+      void repository
+        .replaceHand(reviewed)
+        .catch(() => repository.saveHand(reviewed))
+        .then(() => repository.loadHands())
+        .then((stored) => {
+          setHistory(stored);
+          setStorageNotice("");
+        })
+        .catch(() => setStorageNotice("精算结果未保存"));
+    },
+  });
+  const visibleReviewStatus: DeepReviewStatus = game.deepReview
+    ? "completed"
+    : reviewRuntimeKey === handKey && deepReviewRuntimeStatus !== "not-started"
+      ? deepReviewRuntimeStatus
+      : game.deepReviewStatus;
   useEffect(() => { sound.current.setEnabled(soundEnabled); saveSoundPreference(soundEnabled); }, [soundEnabled]);
   useEffect(() => () => sound.current.dispose(), []);
   useEffect(() => {
@@ -135,18 +190,32 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
       .then((stored) => {
         setHistory(stored);
         setStorageNotice("");
+        setReviewReadyKey(key);
       })
-      .catch(() => setStorageNotice("本手未保存"));
+      .catch(() => {
+        setStorageNotice("本手未保存");
+        setReviewReadyKey(key);
+      });
   }, [game, repository]);
+  useEffect(() => {
+    if (!handComplete || reviewReadyKey !== handKey || game.deepReview) return;
+    if (game.deepReviewStatus !== "not-started" || autoReviewHands.current.has(handKey)) return;
+    autoReviewHands.current.add(handKey);
+    setReviewRuntimeKey(handKey);
+    launchDeepReview();
+  }, [game.deepReview, game.deepReviewStatus, handComplete, handKey, launchDeepReview, reviewReadyKey]);
   const submit = (a: GameAction) => {
     sound.current.play("confirm");
-    playAction(a);
+    playAction(a, preActionInsights.state);
   };
   const refreshHistory = async () => {
     const stored = await repository.loadHands();
     setHistory(stored);
   };
   const startTrainingHand = (target: TrainingTarget) => {
+    stopDeepReview();
+    setReviewRuntimeKey("");
+    setReviewReadyKey("");
     if (target.mode === "none") {
       replaceGame(
         nextActionHand(game, {
@@ -181,8 +250,23 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
       setStorageNotice("分析区宽度未保存");
     });
   };
+  const startDeepReview = () => {
+    setReviewRuntimeKey(handKey);
+    launchDeepReview();
+  };
+  const cancelDeepReview = () => {
+    stopDeepReview();
+    const cancelled = structuredClone(game);
+    cancelled.deepReview = undefined;
+    cancelled.deepReviewStatus = "cancelled";
+    cancelled.deepReviewError = undefined;
+    replaceGame(cancelled);
+    void repository.replaceHand(cancelled).catch(() => {
+      setStorageNotice("精算取消状态未保存");
+    });
+  };
   return (
-    <main>
+    <main className={game.phase === "review" ? "review-mode" : undefined}>
       <Header page={page} setPage={setPage} mode={repository.mode} mobile={mobile} />
       {storageNotice ? <div className="storage-notice" role="status">{storageNotice}</div> : null}
       {page === "继续训练" ? (
@@ -213,11 +297,12 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
                   : phase === "bot-thinking"
                     ? "群友行动中"
                     : handComplete
-                      ? "整手复盘"
+                      ? visibleReviewStatus === "calculating" ? "正在精算" : "整手复盘"
                       : game.phase === "review"
                         ? "结算中"
                       : "动作播放中"}
               </span>
+              {mobile && phase === "hero-turn" ? <MobileInsightSummary state={preActionInsights.state} game={game} /> : null}
             </div>
             {mobile ? (
               <MobilePokerTable game={game} phase={phase} frame={frame} visualTokens={visualTokens} recentActions={recentActions} themeId={gameplaySettings.tableThemeId} />
@@ -233,12 +318,7 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
             ) : handComplete ? (
               <div className="next">
                 <strong>{game.result?.summary}</strong>
-                <button
-                  className="primary"
-                  onClick={() => startTrainingHand({ mode: "none" })}
-                >
-                  开始下一手 →
-                </button>
+                {visibleReviewStatus === "calculating" ? <span>正在后台精算…</span> : null}
               </div>
             ) : (
               <div className="next">
@@ -254,7 +334,19 @@ export default function App({ repository: suppliedRepository, mobile = false }: 
               </div>
             )}
           </section>
-          <Teaching game={game} facts={facts} phase={phase} />
+          <Teaching
+            game={game}
+            facts={facts}
+            insightState={preActionInsights.state}
+            showPreActionInsights={!mobile}
+            phase={phase}
+            reviewStatus={visibleReviewStatus}
+            reviewProgress={deepReviewProgress}
+            reviewError={deepReviewRuntimeError || game.deepReviewError || ""}
+            onCancelReview={cancelDeepReview}
+            onRetryReview={startDeepReview}
+            onNextHand={() => startTrainingHand({ mode: "none" })}
+          />
         </ResizableWorkspace>
       ) : page === "历史牌局" ? (
         <HistoryPage
@@ -311,6 +403,7 @@ function Header({ page, setPage, mode, mobile = false }: { page: Page; setPage: 
       <div className="status">
         <i />
         <span className="status-label">{mode === "native" ? "桌面本地数据" : mode === "mobile" ? "手机本地保存" : "开发预览 · 数据不持久"}</span>
+        <span className="strategy-version">{STRATEGY_ENGINE_LABEL}</span>
         <span className="app-version">{APP_VERSION_LABEL}</span>
       </div>
     </header>
@@ -319,34 +412,79 @@ function Header({ page, setPage, mode, mobile = false }: { page: Page; setPage: 
 function Teaching({
   game,
   facts,
+  insightState,
+  showPreActionInsights,
   phase,
+  reviewStatus,
+  reviewProgress,
+  reviewError,
+  onCancelReview,
+  onRetryReview,
+  onNextHand,
 }: {
   game: GameState;
   facts?: DecisionFacts;
+  insightState: ReturnType<typeof usePreActionInsights>["state"];
+  showPreActionInsights: boolean;
   phase: ReturnType<typeof useGamePlayback>["phase"];
+  reviewStatus: DeepReviewStatus;
+  reviewProgress: ReturnType<typeof useDeepReview>["progress"];
+  reviewError: string;
+  onCancelReview(): void;
+  onRetryReview(): void;
+  onNextHand(): void;
 }) {
   if (isNoActionPlayback(phase)) return null;
-  if (game.phase === "review")
+  if (game.phase === "review") {
+    if (reviewStatus === "calculating") {
+      return (
+        <aside>
+          <DeepReviewProgress
+            status={reviewStatus}
+            progress={reviewProgress}
+            error={reviewError}
+            onCancel={onCancelReview}
+            onRetry={onRetryReview}
+            onNextHand={onNextHand}
+          />
+        </aside>
+      );
+    }
+    if (reviewStatus !== "completed" || !game.deepReview) {
+      return (
+        <aside>
+          <DeepReviewProgress
+            status={reviewStatus}
+            progress={reviewProgress}
+            error={reviewError}
+            onCancel={onCancelReview}
+            onRetry={onRetryReview}
+            onNextHand={onNextHand}
+          />
+          <ReviewShowdown game={game} />
+          <h3>本次运行总账</h3>
+          <SessionLedger players={game.players} />
+        </aside>
+      );
+    }
     return (
       <aside>
-        <p className="eyebrow">整手统一复盘</p>
-        <h2>{game.result?.summary}</h2>
-        <h3>完整行动线</h3>
-        <div className="timeline">
-          {game.log.map((x, i) => (
-            <p className="line" key={i}>
-              <b>{streetName(x.street)}</b> · {x.actor} {x.action}
-              {x.amount ? ` ${x.amount}` : ""}
-              <small>底池 {x.potAfter}</small>
-            </p>
-          ))}
-        </div>
+        <DeepHandReviewView game={game} review={game.deepReview} onRecalculate={onRetryReview} onNextHand={onNextHand} />
         <ReviewShowdown game={game} />
-        <DecisionReview game={game} />
         <h3>本次运行总账</h3>
         <SessionLedger players={game.players} />
       </aside>
     );
+  }
+  if (game.board.length >= 3 && showPreActionInsights) {
+    return (
+      <aside>
+        <p className="eyebrow">实时规则事实 · 不揭示未来牌</p>
+        {insightState.analysis ? null : <h2>正在整理当前决策…</h2>}
+        <PreActionInsights state={insightState} game={game} />
+      </aside>
+    );
+  }
   return (
     <aside>
       <p className="eyebrow">实时规则事实 · 不揭示未来牌</p>
@@ -383,18 +521,6 @@ function Teaching({
           <p>
             推荐：<b>{facts.recommended.action}</b> · {facts.recommended.intent}
           </p>
-          <h3>赔率 / 补牌 / 风险</h3>
-          <ul>
-            <li>
-              胜率 {(facts.equity * 100).toFixed(1)}%，SPR{" "}
-              {facts.risk.spr.toFixed(1)}
-            </li>
-            <li>
-              干净补牌 {facts.outs.clean.length}，脏补牌{" "}
-              {facts.outs.dirty.length}
-            </li>
-            <li>身后待行动玩家 {facts.risk.playersBehind}</li>
-          </ul>
         </>
       ) : game.board.length < 3 ? (
         <>
@@ -408,6 +534,7 @@ function Teaching({
       ) : (
         <div className="ev" role="status">正在后台枚举胜率与 EV，操作按钮仍可立即使用。</div>
       )}
+      {showPreActionInsights ? <PreActionInsights state={insightState} game={game} /> : null}
     </aside>
   );
 }

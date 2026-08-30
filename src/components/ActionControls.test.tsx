@@ -44,10 +44,10 @@ describe("ActionControls", () => {
     fireEvent.click(screen.getByRole("button", { name: "半池" }));
     expect(screen.getByRole("button", { name: "半池" })).toHaveClass("sizing-plaque", "selected");
     expect(screen.getByRole("button", { name: "2/3池" })).toHaveClass("sizing-plaque");
-    expect(screen.getByRole("button", { name: "确认金额" })).toHaveTextContent("加注到 21");
+    expect(screen.getByRole("button", { name: "确认金额" })).toHaveTextContent("加注到 24");
     expect(onAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "确认金额" }));
-    expect(onAction).toHaveBeenCalledWith({ type: "raise", to: 21 });
+    expect(onAction).toHaveBeenCalledWith({ type: "raise", to: 24 });
   });
 
   it("preserves two-step fold confirmation", () => {

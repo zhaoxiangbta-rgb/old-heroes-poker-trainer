@@ -4,6 +4,8 @@ import type { MultiwayOutFacts } from "./multiwayOuts";
 import { multiwayPotExposure, type MultiwayPotExposure } from "./multiwayPots";
 import { legalPostflopTarget } from "./postflopSizing";
 import type { StrategyAction, StrategyRequest, StrategyResult } from "./types";
+import { analyzePokerFactsV4 } from "./v4/pokerFacts";
+import { applyDominanceGateV4 } from "./v4/dominanceGate";
 
 type WeightedAction = Omit<StrategyAction, "frequency" | "ev"> & { weight: number };
 
@@ -155,7 +157,7 @@ export function resolveMultiwayStrategy(
   if (opponentCount < 2) throw new Error("多人策略至少需要两位存活对手");
   const usableOuts = outFacts.clean.length + outFacts.shared.length * 0.5;
   const strongDraw = usableOuts >= 8 && outFacts.reverseImpliedRisk < 0.45;
-  const actions = normalize(
+  const candidates = normalize(
     weightedActions(
       request,
       equityFacts.heroEquity,
@@ -168,6 +170,19 @@ export function resolveMultiwayStrategy(
     passiveExposure,
     opponentCount,
   );
+  const requiredEquity = request.state.legal.canCall
+    ? request.state.legal.callAmount / Math.max(1, request.state.pot + request.state.legal.callAmount)
+    : 0;
+  const gate = applyDominanceGateV4({
+    actions: candidates,
+    facts: analyzePokerFactsV4(request.state.heroHole, request.state.board),
+    pot: request.state.pot,
+    requiredEquity,
+    currentEquity: equityFacts.heroEquity,
+    facingBet: request.state.legal.canCall,
+    street: request.state.street === "preflop" ? undefined : request.state.street,
+  });
+  const actions = gate.actions;
   return {
     actions,
     confidence: equityFacts.exact ? 0.66 : 0.58,
@@ -189,6 +204,7 @@ export function resolveMultiwayStrategy(
       strongDraw: strongDraw ? 1 : 0,
       heroWinnableAmount: passiveExposure.heroWinnableAmount,
       maxLoss: passiveExposure.maxLoss,
+      dominanceRejected: gate.rejected.map((item) => `${item.action.action}:${item.reason}`).join("|"),
     },
   };
 }

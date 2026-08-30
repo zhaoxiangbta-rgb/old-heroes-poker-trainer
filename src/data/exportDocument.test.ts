@@ -3,12 +3,12 @@ import { newGame } from "../game/game";
 import { normalizeGameplaySettings } from "../ui/tableThemes";
 import { decodeTrainingExport, encodeTrainingExport, handKey } from "./exportDocument";
 
-describe("v7 training export", () => {
+describe("v9 training export", () => {
   it("round-trips hands and gameplay settings", () => {
     const hand = newGame(42);
     const gameplaySettings = normalizeGameplaySettings({ tableProfileId: "friends" });
     const decoded = decodeTrainingExport(encodeTrainingExport({ hands: [hand], gameplaySettings }));
-    expect(decoded.version).toBe(7);
+    expect(decoded.version).toBe(9);
     expect(decoded.format).toBe("poker-decision-trainer");
     expect(decoded.hands).toEqual([hand]);
     expect(decoded.gameplaySettings).toEqual(gameplaySettings);
@@ -28,9 +28,9 @@ describe("v7 training export", () => {
       gameplaySettings: normalizeGameplaySettings({}),
       hands: [legacy],
     }));
-    expect(decoded.version).toBe(7);
+    expect(decoded.version).toBe(9);
     expect(decoded.hands[0]).toMatchObject({
-      version: 7,
+      version: 9,
       strategyVersion: "legacy-v6",
       strategyDecisions: [],
     });
@@ -42,7 +42,7 @@ describe("v7 training export", () => {
       hands: [hand],
       gameplaySettings: normalizeGameplaySettings({}),
     });
-    expect(JSON.parse(json).version).toBe(7);
+    expect(JSON.parse(json).version).toBe(9);
     expect(decodeTrainingExport(json).hands[0].strategyDecisions).toEqual(
       hand.strategyDecisions,
     );

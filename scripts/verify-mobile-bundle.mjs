@@ -26,6 +26,35 @@ if (visualPortraits.length !== 6) throw new Error(`unified visual bundle require
 for (const relative of ["cards/card-paper.png", "cards/card-back.png", "controls/fold.png", "controls/check.png", "controls/primary.png", "controls/all-in.png", "chips/wager-red.png", "chips/wager-blue.png", "chips/wager-green.png", "chips/wager-black.png", "chips/wager-gold.png"]) {
   if (!files.includes(join(visualRoot, relative))) throw new Error(`unified poker visual missing: ${relative}`);
 }
+const strategyPath = join(root, "assets", "strategy", "strategy-v3-mobile.ohsp3");
+if (!files.includes(strategyPath)) throw new Error("mobile V3 strategy pack missing");
+const strategyText = await readFile(strategyPath, "utf8");
+if (!strategyText.startsWith("OHSP3\n")) throw new Error("mobile V3 strategy pack magic invalid");
+const manifestEnd = strategyText.indexOf("\n", 6);
+const strategyManifest = JSON.parse(strategyText.slice(6, manifestEnd));
+const strategyPayload = strategyText.slice(manifestEnd + 1);
+const { createHash } = await import("node:crypto");
+if (strategyManifest.packKind !== "mobile" || strategyManifest.schemaVersion !== 3) {
+  throw new Error("mobile V3 strategy manifest invalid");
+}
+if (createHash("sha256").update(strategyPayload).digest("hex") !== strategyManifest.sha256) {
+  throw new Error("mobile V3 strategy hash mismatch");
+}
+const solverV4Path = join(root, "assets", "strategy-v4", "strategy-v4-reference.json");
+const solverV4ManifestPath = `${solverV4Path}.manifest.json`;
+if (!files.includes(solverV4Path) || !files.includes(solverV4ManifestPath)) {
+  throw new Error("mobile V4 Solver reference pack missing");
+}
+const solverV4Text = await readFile(solverV4Path, "utf8");
+const solverV4 = JSON.parse(solverV4Text);
+const solverV4Manifest = JSON.parse(await readFile(solverV4ManifestPath, "utf8"));
+if (solverV4.strategyVersion !== "strategy-v4.0.0" || solverV4.schemaVersion !== 4 ||
+    !solverV4.nodes.length || solverV4.nodes.some((node) => !node.opponentHandClasses?.length)) {
+  throw new Error("mobile V4 Solver reference pack invalid");
+}
+if (createHash("sha256").update(solverV4Text).digest("hex") !== solverV4Manifest.sha256) {
+  throw new Error("mobile V4 Solver reference hash mismatch");
+}
 const forbidden = ["SENTINEL-DESKTOP-SECRET", "player-names.local.json", "Bella", "哈队", "倪少", "零哥", "Q大爷", "董秘"];
 for (const file of files.filter((path) => /\.(html|js|css|json)$/.test(path))) {
   const content = await readFile(file, "utf8");
@@ -43,8 +72,9 @@ for (const fact of [
   "preflop-abstract-v1",
   "hu-postflop-abstract-v1",
   "multiway-resolver-v1",
-  "boundary-regret-v1",
-  "fb9f0c8867b8e28655a902024d438c71b7d38ed6319db1db413dd6228461a3e9",
+  "strategy-v3",
+  "explicit-matrix-v3",
+  "combo-elasticity-multistreet-v3",
 ]) {
   if (!mobileScript.includes(fact)) throw new Error(`mobile strategy fact missing: ${fact}`);
 }

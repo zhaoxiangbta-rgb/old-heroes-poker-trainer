@@ -38,6 +38,7 @@ export interface DesktopRepository {
   readonly mode: RepositoryMode;
   loadHands(): Promise<GameState[]>;
   saveHand(hand: GameState): Promise<void>;
+  replaceHand(hand: GameState): Promise<void>;
   exportHands(): Promise<ExportHandsResult>;
   importHands(): Promise<ImportHandsResult>;
   clearHands(): Promise<void>;

@@ -125,8 +125,8 @@ describe("decision assessment", () => {
     expect(assessment).toMatchObject({
       scored: true,
       facts: {
-        strategyVersion: "preflop-abstract-v1",
-        strategySource: expect.stringMatching(/blueprint|interpolated/),
+        strategyVersion: "strategy-v4.0.0",
+        strategySource: "strategy-pack-v3",
       },
     });
   });

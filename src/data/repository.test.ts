@@ -25,6 +25,84 @@ describe("memory desktop repository", () => {
     expect((await repository.loadHands()).map((hand) => hand.seed)).toEqual([2, 1]);
   });
 
+  it("replaces the same hand after deep review state changes", async () => {
+    const repository = createMemoryRepository();
+    const first = completed(7);
+    await repository.saveHand(first);
+
+    const reviewed = structuredClone(first);
+    reviewed.deepReviewStatus = "cancelled";
+    await repository.replaceHand(reviewed);
+
+    const rows = await repository.loadHands();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].deepReviewStatus).toBe("cancelled");
+  });
+
+  it("round-trips coach review v2 while preserving legacy v1 reviews", async () => {
+    const repository = createMemoryRepository();
+    const reviewed = completed(8);
+    reviewed.deepReviewStatus = "completed";
+    reviewed.deepReview = {
+      version: 2,
+      status: "completed",
+      handNo: reviewed.handNo,
+      seed: reviewed.seed,
+      stateHash: "coach-v2",
+      strategyVersion: reviewed.strategyVersion,
+      calculatorVersion: "deep-review-v2",
+      completedAt: "2026-08-29T00:00:00.000Z",
+      summary: {
+        grade: "良好",
+        totalNormalizedEvLoss: 0,
+        strongestPoint: "范围判断清楚",
+        priorityCorrection: "保持当前思路",
+        confidence: 1,
+        precision: "exact",
+      },
+      decisions: [{
+        id: "1:0", logIndex: 0, street: "flop", position: "BTN", pot: 20,
+        spr: 6, activePlayers: 2, playersBehind: 0,
+        actual: { type: "call" }, recommended: { type: "call" }, candidates: [],
+        normalizedEvLoss: 0, equity: 0.6, requiredEquity: 0.25,
+        cleanOuts: 2, dirtyOuts: 0, ranges: {}, precision: "exact",
+        samples: 1081, coverage: 1, confidence: 1, tags: [], correctThinking: [],
+        corrections: [], coreRule: "按范围决策。",
+        coach: {
+          madeHandLabel: "顶对", heroRangePercentile: 0.68,
+          equityVsFullRange: 0.6, equityVsContinueRange: 0.48,
+          opponentBuckets: [{ kind: "top-pair", probability: 1 }],
+          opponentResponses: [{ action: "call", probability: 1 }],
+          atLeastOnePlayerBehindContinues: null, runoutSummary: [],
+          recommendationReasons: ["跟注价格合适"], changeConditions: ["对手改为大额下注"],
+          confidence: 1, narrative: "你的顶对领先对手大部分范围。",
+        },
+      }],
+    };
+    await repository.saveHand(reviewed);
+    expect((await repository.loadHands())[0].deepReview).toMatchObject({
+      version: 2,
+      decisions: [{ coach: { madeHandLabel: "顶对" } }],
+    });
+
+    const legacy = completed(9);
+    legacy.deepReviewStatus = "completed";
+    legacy.deepReview = {
+      ...reviewed.deepReview,
+      version: 1,
+      handNo: legacy.handNo,
+      seed: legacy.seed,
+      decisions: reviewed.deepReview.decisions.map((decision) => {
+        const { coach, ...legacyDecision } = decision;
+        void coach;
+        return legacyDecision;
+      }),
+    };
+    await repository.saveHand(legacy);
+    const rows = await repository.loadHands();
+    expect(rows.find((row) => row.seed === 9)?.deepReview?.version).toBe(1);
+  });
+
   it("clears hands without clearing settings and never stores the API key", async () => {
     const repository = createMemoryRepository();
     await repository.saveHand(completed(1));

@@ -16,14 +16,14 @@ function request(seed = 42): StrategyRequest {
   };
 }
 
-describe("local V2 strategy engine contract", () => {
-  it("routes standard preflop nodes through the auditable blueprint", () => {
+describe("local strategy engine contract", () => {
+  it("routes standard preflop nodes through the explicit V3 matrix", () => {
     const result = createLocalStrategyEngine().decide(request());
     expect(result.actions.reduce((sum, action) => sum + action.frequency, 0)).toBeCloseTo(1, 10);
     expect(result.actions.every((action) => Number.isFinite(action.ev))).toBe(true);
     expect(result).toMatchObject({
-      strategyVersion: "preflop-abstract-v1",
-      source: expect.stringMatching(/blueprint|interpolated/),
+      strategyVersion: "strategy-v4.0.0",
+      source: "strategy-pack-v3",
       nodeId: expect.stringContaining("pf1:"),
       confidence: expect.any(Number),
     });
@@ -31,12 +31,45 @@ describe("local V2 strategy engine contract", () => {
     expect(result.explanationFacts.fallback).toBeUndefined();
   });
 
+  it("models a small-blind complete for marginal suited hands when action folds to the blinds", () => {
+    const input = request(142);
+    const actor = input.state.players.find((player) => player.seat === input.state.actingSeat)!;
+    const bigBlind = input.state.players.find((player) => player.seat !== actor.seat)!;
+    input.state.players.forEach((player) => {
+      player.folded = player.seat !== actor.seat && player.seat !== bigBlind.seat;
+      player.position = player.seat === actor.seat ? "SB" : player.seat === bigBlind.seat ? "BB" : player.position;
+      player.streetBet = player.seat === actor.seat ? 1 : player.seat === bigBlind.seat ? 2 : 0;
+    });
+    input.state.smallBlindSeat = actor.seat;
+    input.state.bigBlindSeat = bigBlind.seat;
+    input.state.heroHole = ["Ks", "2s"];
+    input.state.pot = 3;
+    input.state.currentBet = 2;
+    input.state.actions = [];
+    input.state.legal = {
+      canFold: true,
+      canCheck: false,
+      canCall: true,
+      canRaise: true,
+      callAmount: 1,
+      minRaiseTo: 4,
+      maxRaiseTo: 200,
+    };
+
+    const result = createLocalStrategyEngine().decide(input);
+    const complete = result.actions.find((action) => action.action === "call");
+    const fold = result.actions.find((action) => action.action === "fold");
+    expect(complete).toEqual(expect.objectContaining({ frequency: expect.any(Number) }));
+    expect(complete!.frequency).toBeGreaterThan(0.5);
+    expect(complete!.ev).toBeGreaterThan(fold?.ev ?? Number.NEGATIVE_INFINITY);
+  });
+
   it("routes multiway postflop through the range and side-pot resolver", () => {
     const input = replayFixture("four-way-three-checks-to-button");
     input.ranges = snapshotRangeLedger(buildRangeLedger(input.state));
     const result = createLocalStrategyEngine().decide(input);
     expect(result).toMatchObject({
-      strategyVersion: "multiway-resolver-v1",
+      strategyVersion: "strategy-v4.0.0",
       source: "multiway-resolver",
       nodeId: expect.stringContaining("multiway:flop:4way"),
     });
@@ -59,11 +92,27 @@ describe("local V2 strategy engine contract", () => {
       replayFixture("turn-overbet-set"),
     );
     expect(result).toMatchObject({
-      strategyVersion: "hu-postflop-abstract-v1",
+      strategyVersion: "strategy-v4.0.0",
       source: expect.stringMatching(/blueprint|interpolated|blueprint\+resolver/),
       nodeId: expect.stringContaining("hupf1:"),
     });
     expect(result.explanationFacts.fallback).toBeUndefined();
+    expect(result.actions.reduce((sum, action) => sum + action.frequency, 0)).toBeCloseTo(1, 10);
+  });
+
+  it("routes heads-up postflop with known ranges through V3 combo elasticity", () => {
+    const input = replayFixture("turn-overbet-set");
+    input.ranges = snapshotRangeLedger(buildRangeLedger(input.state));
+    const result = createLocalStrategyEngine().decide(input);
+    expect(result).toMatchObject({
+      strategyVersion: "strategy-v4.0.0",
+      source: "strategy-pack-v3+resolver",
+      nodeId: expect.stringContaining("pfv3:pfs2:"),
+      explanationFacts: {
+        algorithm: "combo-elasticity-multistreet-v3",
+      },
+    });
+    expect(result.confidence).toBeGreaterThan(0);
     expect(result.actions.reduce((sum, action) => sum + action.frequency, 0)).toBeCloseTo(1, 10);
   });
 
@@ -84,9 +133,9 @@ describe("local V2 strategy engine contract", () => {
 
   it("replays exactly from the same request", () => {
     const input = request(913);
-    expect(createLocalStrategyEngine().decide(input)).toEqual(
-      createLocalStrategyEngine().decide(input),
-    );
+    const result = createLocalStrategyEngine().decide(input);
+    expect(result).toEqual(createLocalStrategyEngine().decide(input));
+    expect(result.rangeFacts.rangeStateHash).toMatch(/^rv4:/);
   });
 
   it("selects the same mixed-strategy action from the same seed and decision index", () => {
@@ -134,7 +183,7 @@ describe("local V2 strategy engine contract", () => {
       maxRaiseTo: 2,
     };
     const result = createLocalStrategyEngine().decide(input);
-    expect(result.source).toMatch(/blueprint|interpolated/);
+    expect(result.source).toBe("strategy-pack-v3");
     expect(result.actions).toContainEqual(
       expect.objectContaining({ action: "call", frequency: expect.any(Number) }),
     );

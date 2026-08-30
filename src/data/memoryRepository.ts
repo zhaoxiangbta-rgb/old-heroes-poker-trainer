@@ -26,6 +26,12 @@ export function createMemoryRepository(): DesktopRepository {
       if (hands.some((item) => `${item.seed}:${item.handNo}` === key)) return;
       hands.unshift(normalizeGameState(structuredClone(hand)));
     },
+    async replaceHand(hand) {
+      const key = `${hand.seed}:${hand.handNo}`;
+      const index = hands.findIndex((item) => `${item.seed}:${item.handNo}` === key);
+      if (index < 0) throw new Error("待更新牌局不存在");
+      hands[index] = normalizeGameState(structuredClone(hand));
+    },
     async exportHands() {
       return { cancelled: true, count: 0 };
     },

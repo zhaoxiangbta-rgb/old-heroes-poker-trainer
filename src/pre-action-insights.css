@@ -1,0 +1,104 @@
+.pre-action-insights {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  color: #d9ddd8;
+}
+.pre-action-insights__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.pre-action-insights__heading h3 { margin: 0; }
+.pre-action-insights__current { display: grid; gap: 3px; margin: 0; padding: 9px 10px; border: 1px solid #66512d; border-radius: 8px; background: #201b11; }
+.pre-action-insights__current b { color: #ead59d; }
+.pre-action-insights__current span { color: #b7c2bb; font-size: 12px; }
+.pre-action-insights__heading span { color: #a89463; font-size: 12px; white-space: nowrap; }
+.pre-action-insights__paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.pre-action-insights__paths article {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid #2c3b35;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #14211c, #0d1512);
+}
+.pre-action-insights__paths b { color: #ead59d; }
+.pre-action-insights__paths span { color: #8fa39a; font-size: 12px; }
+.pre-action-insights__paths strong { color: #f3f1e8; font-size: 13px; }
+.pre-action-insights__facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.pre-action-insights__facts span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #18241f;
+  color: #b9c7bf;
+  font-size: 12px;
+}
+.pre-action-insights__facts span.risk { color: #e4a789; background: #2b1b18; }
+.pre-action-insights__warning,
+.pre-action-insights__loading { margin: 0; color: #b7a98b; line-height: 1.55; }
+.pre-action-insights__toggle {
+  min-height: 38px;
+  border: 1px solid #6f5b2f;
+  border-radius: 9px;
+  color: #e8cf90;
+  background: #171a15;
+  cursor: pointer;
+}
+.pre-action-insights__opponents { display: grid; gap: 10px; }
+.pre-action-insights__opponents article {
+  padding: 11px;
+  border: 1px solid #29352f;
+  border-radius: 10px;
+  background: #101714;
+}
+.pre-action-insights__opponents header { display: flex; justify-content: space-between; gap: 8px; }
+.pre-action-insights__opponents header span,
+.pre-action-insights__opponents small { color: #87978e; font-size: 11px; }
+.pre-action-insights__buckets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin: 9px 0; font-size: 12px; }
+.pre-action-insights__opponents p { margin: 7px 0 0; color: #c8d0cb; font-size: 12px; }
+.pre-action-insights--v2 { gap: 0; }
+
+.pre-action-coach { gap: 12px; }
+.pre-action-coach__header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px; border-bottom:1px solid #28382f; }
+.pre-action-coach__header > div { display:flex; align-items:baseline; gap:8px; }
+.pre-action-coach__header > div > span { color:#96a69d; font-size:12px; }
+.pre-action-coach__header > div > b { color:#ead59d; font-size:15px; }
+.pre-action-coach__header > span { padding:3px 7px; border-radius:999px; font-size:11px; }
+.pre-action-coach__header .is-ready { color:#7ed7a7; background:#11281d; border:1px solid #27583d; }
+.pre-action-coach__header .is-degraded { color:#efbd91; background:#2b1c14; border:1px solid #68432a; }
+.pre-action-coach__warning { margin:0; padding:8px 10px; border-left:3px solid #c47d47; background:#251a13; color:#e5b891; font-size:12px; line-height:1.5; }
+.pre-action-coach__hero { display:grid; grid-template-columns:minmax(120px,.72fr) minmax(0,1.28fr); gap:10px; padding:12px; border:1px solid #66512d; border-radius:10px; background:linear-gradient(135deg,#211c12,#111915); }
+.pre-action-coach__hero > div { display:grid; gap:5px; align-content:start; }
+.pre-action-coach small { color:#899990; font-size:11px; }
+.pre-action-coach__hero strong { color:#f2e0ad; font-size:18px; }
+.pre-action-coach__upgrades { border-left:1px solid #3a433b; padding-left:11px; }
+.pre-action-coach__upgrades > span { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.pre-action-coach__upgrades b { color:#d9e2dc; font-size:13px; }
+.pre-action-coach__upgrades i { color:#899990; font-size:11px; font-style:normal; }
+.pre-action-coach__upgrades em { color:#aebbb4; font-size:12px; font-style:normal; line-height:1.45; }
+.pre-action-coach__opponent-heading { display:grid; gap:2px; }
+.pre-action-coach__opponent-heading b { color:#e6e9e7; font-size:14px; }
+.pre-action-coach__opponent-heading span { color:#7f9188; font-size:11px; }
+.pre-action-coach__opponents { display:grid; gap:8px; }
+.pre-action-coach__opponents article { padding:10px; border:1px solid #293a31; border-radius:9px; background:#101814; }
+.pre-action-coach__opponents article.is-primary { border-color:#80652f; box-shadow:inset 3px 0 #c89a42; }
+.pre-action-coach__opponents header { display:flex; justify-content:space-between; gap:8px; margin-bottom:3px; }
+.pre-action-coach__opponents header > b { color:#eef0ed; }
+.pre-action-coach__opponents header > span { color:#d4b467; font-size:11px; }
+.pre-action-coach__buckets { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.pre-action-coach__buckets span { padding:4px 6px; border-radius:6px; background:#1d2822; color:#9caaa3; font-size:11px; }
+.pre-action-coach__buckets b { color:#e3d6ae; }
+.pre-action-coach__opponents footer { margin-top:7px; color:#718179; font-size:10px; }
+.pre-action-coach__empty { margin:0; color:#899990; font-size:12px; }
+.pre-action-analysis-section { padding: 14px 2px; border-bottom: 1px solid rgba(176, 143, 75, .2); }
+.pre-action-analysis-section:first-child { padding-top: 4px; }
+.pre-action-analysis-section:last-child { border-bottom: 0; }
+.pre-action-analysis-section h3 { margin: 0 0 7px; color: #dfc681; font-size: 15px; letter-spacing: .02em; }
+.pre-action-analysis-section p { margin: 0; color: #c7d0ca; font-size: 13px; line-height: 1.75; }
+.pre-action-analysis-section--baseline { margin: 4px -8px; padding: 14px 10px; border: 1px solid rgba(195, 151, 57, .34); border-radius: 9px; background: rgba(126, 88, 18, .1); }

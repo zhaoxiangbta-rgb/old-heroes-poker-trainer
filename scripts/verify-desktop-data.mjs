@@ -48,18 +48,30 @@ for (const tag of ["overcalling", "squeeze-call-too-wide", "multiway-top-pair", 
   if (!trainingTypes.includes(tag)) failures.push(`缺少弱点标签：${tag}`);
 }
 const game = read("src/game/game.ts");
-for (const field of ["version: 7", "strategyVersion", "strategyDecisions", "playerProfiles", "friendBankrolls", "tableProfileId", "trainingTarget", "assessments", "assessmentStatus"]) {
-  if (!game.includes(field)) failures.push(`缺少 GameState v7 合同：${field}`);
+for (const field of ["version: 9", "strategyVersion", "strategyDecisions", "playerProfiles", "friendBankrolls", "tableProfileId", "trainingTarget", "assessments", "assessmentStatus", "reviewDecisionInputs", "deepReviewStatus", "deepReview"]) {
+  if (!game.includes(field)) failures.push(`缺少 GameState v9 合同：${field}`);
 }
 const playerProfiles = read("src/policy/playerProfiles.ts");
 for (const field of ["friend-01", "friend-02", "friend-03", "friend-04", "friend-05", "friend-06", "effectivePlayerProfile", "validatePlayerProfiles"]) {
   if (!playerProfiles.includes(field)) failures.push(`缺少牌友画像合同：${field}`);
 }
+const strategyEngine = read("src/strategy/engine.ts");
+const preflopLookup = read("src/strategy/v3/preflopLookup.ts");
+const strategySource = read("src/strategy/v3/preflopSource.ts");
+const postflopStrategy = read("src/strategy/v3/postflopStrategy.ts");
+for (const [label, value, marker] of [
+  ["策略引擎", strategyEngine, "lookupPreflopV3"],
+  ["V3 翻前决策来源", preflopLookup, "strategy-pack-v3"],
+  ["V3 翻前明确矩阵", strategySource, "expert-baseline-v3.0.0"],
+  ["V3 翻后组合弹性", postflopStrategy, "combo-elasticity-multistreet-v3"],
+]) {
+  if (!value.includes(marker)) failures.push(`${label}缺少版本标记：${marker}`);
+}
 const storage = read("src-tauri/src/storage.rs");
 for (const field of ["decision_assessments", "normalized_ev_loss", "user_version\", 3", "'gameplay'"]) {
   if (!storage.includes(field)) failures.push(`缺少 SQLite v3 合同：${field}`);
 }
-for (const component of ["SpecialTrainingPage.tsx", "WeaknessReportPage.tsx", "DecisionReview.tsx"]) {
+for (const component of ["SpecialTrainingPage.tsx", "WeaknessReportPage.tsx", "DeepReviewProgress.tsx", "DeepHandReview.tsx"]) {
   if (!filesBelow("src/components").some((path) => path.endsWith(component))) failures.push(`缺少真实训练组件：${component}`);
 }
 

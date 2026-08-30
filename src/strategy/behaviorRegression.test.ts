@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLocalStrategyEngine, selectStrategyAction } from "./engine";
+import { buildRangeLedger, snapshotRangeLedger } from "./rangeLedger";
 import { replayFixture } from "./replayFixtures";
 
 function decide(name: Parameters<typeof replayFixture>[0], seed = 1) {
@@ -33,5 +34,19 @@ describe("strategy behavior regressions", () => {
       if (selected.action === "all-in") allIns += 1;
     }
     expect(allIns / 500).toBeLessThan(0.15);
+  });
+
+  it("keeps the standard postflop answer auditable when a friend-game style is applied", () => {
+    const request = replayFixture("turn-overbet-set", 91);
+    request.state.tableProfileId = "friends";
+    request.ranges = snapshotRangeLedger(buildRangeLedger(request.state));
+    const result = createLocalStrategyEngine().decide(request);
+    expect(result.strategyVersion).toBe("strategy-v4.0.0");
+    expect(result.baselineActions).toBeDefined();
+    expect(result.adjustment).toMatchObject({ applied: true, tableProfileId: "friends" });
+    result.actions.forEach((action, index) => {
+      expect(Math.abs(action.frequency - result.baselineActions![index].frequency))
+        .toBeLessThanOrEqual(0.1500001);
+    });
   });
 });

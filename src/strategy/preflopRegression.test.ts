@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "../engine/cards";
+import type { Legal } from "../game/game";
 import type { Position } from "../game/game";
-import { lookupPreflopBlueprint } from "./preflopBlueprint";
 import type { PreflopNode, PreflopSpot, PreflopStackBucket } from "./types";
+import { compilePreflopMatrix } from "./v3/preflopCompiler";
+import { lookupPreflopV3 } from "./v3/preflopLookup";
+import { PREFLOP_SOURCE_V3 } from "./v3/preflopSource";
+
+const MATRIX = compilePreflopMatrix(PREFLOP_SOURCE_V3);
 
 function node(
   spot: PreflopSpot,
@@ -32,7 +37,22 @@ function frequency(
   actions: string[],
   stack: PreflopStackBucket = 100,
 ) {
-  return lookupPreflopBlueprint(node(spot, position, stack), hole).actions
+  const legal: Legal = {
+    canFold: true,
+    canCheck: spot === "unopened" && position === "BB",
+    canCall: spot !== "unopened" && spot !== "isolate-limpers",
+    canRaise: true,
+    callAmount: spot === "unopened" || spot === "isolate-limpers" ? 0 : 4,
+    minRaiseTo: 8,
+    maxRaiseTo: stack * 2,
+  };
+  return lookupPreflopV3(MATRIX, node(spot, position, stack), hole, legal, {
+    pot: 7,
+    currentBet: spot === "unopened" || spot === "isolate-limpers" ? 2 : 6,
+    actorStreetBet: 0,
+    actorStack: stack * 2,
+    bigBlind: 2,
+  }).actions
     .filter((item) => actions.includes(item.action))
     .reduce((sum, item) => sum + item.frequency, 0);
 }
@@ -42,6 +62,11 @@ describe("preflop real-play regression set", () => {
     const hand: [Card, Card] = ["8h", "7h"];
     expect(frequency("unopened", "BTN", hand, ["raise"])).toBeGreaterThan(0.5);
     expect(frequency("unopened", "UTG", hand, ["raise"])).toBeLessThan(0.2);
+  });
+
+  it("does not pure-fold a suited wheel ace first-in from the hijack", () => {
+    const open = frequency("unopened", "HJ", ["As", "2s"], ["raise"]);
+    expect(open).toBeGreaterThan(0.35);
   });
 
   it("does not treat big-blind defense as an out-of-position cold call", () => {
@@ -67,7 +92,21 @@ describe("preflop real-play regression set", () => {
     const target = node("facing-open", "BB");
     for (let index = 0; index < 10_000; index += 1) {
       const started = performance.now();
-      lookupPreflopBlueprint(target, index % 2 ? ["Ah", "Jc"] : ["8h", "7h"]);
+      lookupPreflopV3(MATRIX, target, index % 2 ? ["Ah", "Jc"] : ["8h", "7h"], {
+        canFold: true,
+        canCheck: false,
+        canCall: true,
+        canRaise: true,
+        callAmount: 4,
+        minRaiseTo: 8,
+        maxRaiseTo: 200,
+      }, {
+        pot: 7,
+        currentBet: 6,
+        actorStreetBet: 0,
+        actorStack: 200,
+        bigBlind: 2,
+      });
       durations.push(performance.now() - started);
     }
     durations.sort((first, second) => first - second);

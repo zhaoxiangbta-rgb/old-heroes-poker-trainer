@@ -41,8 +41,8 @@ describe("mobile bet sizing", () => {
     };
 
     expect(mobileBetPresetTarget(game, "minimum")).toBe(16);
-    expect(mobileBetPresetTarget(game, "half-pot")).toBe(25);
-    expect(mobileBetPresetTarget(game, "two-thirds-pot")).toBe(30);
+    expect(mobileBetPresetTarget(game, "half-pot")).toBe(28);
+    expect(mobileBetPresetTarget(game, "two-thirds-pot")).toBe(34);
     expect(mobileBetPresetTarget(game, "pot")).toBe(38);
   });
 

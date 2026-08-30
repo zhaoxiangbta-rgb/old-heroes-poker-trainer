@@ -35,7 +35,10 @@ function player(overrides: Partial<HandPlayerProfile["effective"]>): HandPlayerP
 
 describe("bounded preflop profile deviation", () => {
   it("keeps balanced strategy unchanged without an individual profile", () => {
-    expect(applyBoundedDeviation(result(), "balanced").actions).toEqual(result().actions);
+    const adjusted = applyBoundedDeviation(result(), "balanced");
+    expect(adjusted.actions).toEqual(result().actions);
+    expect(adjusted.baselineActions).toEqual(result().actions);
+    expect(adjusted.adjustment).toMatchObject({ applied: false, maxShift: 0 });
   });
 
   it("widens friend-game calls and loose-wild aggression", () => {
@@ -60,5 +63,27 @@ describe("bounded preflop profile deviation", () => {
     expect(shifted.actions.reduce((sum, item) => sum + item.frequency, 0)).toBeCloseTo(1, 10);
     expect(shifted.actions.map((item) => item.action)).toEqual(baseline.actions.map((item) => item.action));
     expect(shifted.explanationFacts.profileDeviationMax).toBeLessThanOrEqual(0.15);
+    expect(shifted.baselineActions).toEqual(baseline.actions);
+    expect(shifted.adjustment).toMatchObject({
+      applied: true,
+      tableProfileId: "loose-wild",
+      playerArchetype: "balanced",
+    });
+  });
+
+  it("never promotes a negative-EV deviation above every non-negative baseline action", () => {
+    const baseline = result();
+    baseline.actions = [
+      { action: "fold", frequency: 0.38, ev: 0, intent: "pot-control" },
+      { action: "call", frequency: 0.36, ev: -4, intent: "pot-control" },
+      { action: "raise", toAmount: 10, frequency: 0.26, ev: 0.2, intent: "value" },
+    ];
+    const shifted = applyBoundedDeviation(
+      baseline,
+      "friends",
+      player({ looseness: 100, aggression: 5, bluff: 0 }),
+    );
+    const top = [...shifted.actions].sort((first, second) => second.frequency - first.frequency)[0];
+    expect(top.ev).toBeGreaterThanOrEqual(0);
   });
 });

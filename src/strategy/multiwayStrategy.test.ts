@@ -127,6 +127,11 @@ describe("range-based multiway strategy", () => {
     expect(frequency(result, "raise") + frequency(result, "all-in")).toBeLessThanOrEqual(0.03);
   });
 
+  it("removes a materially negative call before a loose profile can sample it", () => {
+    const result = solve(0.08);
+    expect(result.actions.some((action) => action.action === "call")).toBe(false);
+  });
+
   it("reduces marginal aggression as more live opponents remain", () => {
     const threeWay = solve(0.58, outs(), 2);
     const fiveWay = solve(0.58, outs(), 4);

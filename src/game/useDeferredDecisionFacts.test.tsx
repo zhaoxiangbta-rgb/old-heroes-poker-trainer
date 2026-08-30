@@ -25,6 +25,12 @@ describe("useDeferredDecisionFacts", () => {
     );
     expect(result.current).toBeUndefined();
     expect(posted).toHaveLength(1);
+    expect(posted[0]).toEqual(expect.objectContaining({
+      streetBet: game.players[game.heroSeat].streetBet,
+      canRaise: game.legal.canRaise,
+      minRaiseTo: game.legal.minRaiseTo,
+      maxRaiseTo: game.legal.maxRaiseTo,
+    }));
     const facts = { equity: 0.5 } as never;
     act(() => emit?.({ data: { facts } } as MessageEvent));
     expect(result.current).toBe(facts);

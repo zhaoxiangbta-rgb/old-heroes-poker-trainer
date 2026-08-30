@@ -15,3 +15,4 @@ release/
 config/player-names.local.json
 src/config/playerNames.generated.ts
 release/local-private/
+public/assets/strategy/*.ohsp3
